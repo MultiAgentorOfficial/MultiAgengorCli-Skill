@@ -2,7 +2,7 @@
 name: multiagentor
 description: Dynamically discover, install, operate, and troubleshoot MultiAgentor Scenario CLI capabilities. Use for service accounts, scenarios, persistent browser identities, tasks, supervised browser runs, evidence, and workspace operations as the CLI and service API evolve.
 metadata:
-  version: "1.2.2"
+  version: "1.3.0"
 ---
 
 # MultiAgentor
@@ -14,10 +14,10 @@ Use the CLI as the local browser executor and the downloaded scenario package as
 Follow these stages in order:
 
 1. **Skill update gate:** run the platform `update-skill` script exactly once. When it reports `updated: true`, stop the workflow and ask the user to start a new Agent task so the replaced instructions load.
-2. **CLI update gate:** when no browser run is active, run the platform `update-cli` script once for the managed portable installation. It compares source commits when Git is available, refreshes archive installations when Git is unavailable, and installs the CLI when absent. Preserve its returned `invocation` for the workflow.
+2. **CLI update gate:** when no browser run is active, run the platform `update-cli` script once for the managed portable installation. It compares the installed CLI with npm `dist-tags.latest` and installs the npm package when absent or outdated. Preserve its returned `invocation` for the workflow.
 3. **Environment check:** detect OS/architecture, Node runtime, NVM, CLI launcher, data directory, API base, and browser runtime override. Read [installation.md](references/installation.md). On Windows, prefer `scripts/check-environment.ps1`; on macOS, prefer `scripts/check-environment.sh`.
-4. **CLI version check:** compare the running CLI version and source/package identity with its local checkout and the official repository HEAD. Pin one launcher/version for the current run. Do not update while a browser run is active.
-5. **Install or update when needed:** derive Node and package manager requirements from the current CLI repository's `package.json`. Use a compatible existing/NVM runtime, or let the update gate run the platform portable bootstrap when Node is missing. Build the CLI and verify the resulting launcher/version/help.
+4. **CLI version check:** compare the running CLI version with npm `dist-tags.latest` and the installed package identity. Pin one launcher/version for the current run. Do not update while a browser run is active.
+5. **Install or update when needed:** read Node requirements from the current npm package metadata. Use a compatible existing/NVM runtime, or let the update gate install a verified portable Node when Node is missing. Install `multiagentor-scenario-cli` from npm and verify the launcher/version/help.
 6. **Discover the live interface:** read [dynamic-discovery.md](references/dynamic-discovery.md), then query current help, local compiled validation code, returned JSON, and downloaded scenario files.
 7. **Execute the scenario workflow:** authenticate, obtain a scenario, prepare a persistent browser identity, create a task, and supervise its foreground JSONL session. Read [execution-workflow.md](references/execution-workflow.md) and [supervised-execution.md](references/supervised-execution.md).
 8. **Close and verify:** drive the run to an advertised terminal state, read actual evidence/result files, verify Profile release, and report exact versions, IDs, status, reason, and artifact paths.
@@ -29,7 +29,7 @@ Follow these stages in order:
 3. Query the actual binary for its version and help. Build the working command and capability map from live output, the installed package, returned JSON, and downloaded scenario package.
 4. Use read-only discovery before asking for IDs or supported values. Preserve the same launcher, CLI version, data directory, and API base for the workflow.
 
-If no launcher is usable, read [installation.md](references/installation.md). Do not assume the package is available from npm; the CLI repository currently documents source installation.
+If no launcher is usable, read [installation.md](references/installation.md). Install the CLI only from npm; do not clone or download a CLI source repository.
 
 ## Route by intent
 

@@ -19,25 +19,19 @@ When help is insufficient, inspect the files belonging to the executed installat
 3. Search its README/docs, compiled command router, protocol definitions, and browser action implementation.
 4. Search by the command/action name rather than assuming a fixed file path.
 
-Useful search targets in the current repository layout include `workspace-commands`, `protocol`, `browser-run`, `contract`, `HELP`, `parseArgs`, and action validation schemas. These names are hints; use file search because the layout can change.
+Useful search targets in the installed npm package include `workspace-commands`, `protocol`, `browser-run`, `contract`, `HELP`, `parseArgs`, and action validation schemas. These names are hints; use file search because the package layout can change.
 
-The source and compiled files associated with the running binary outrank this Skill and the remote repository.
+The installed package files associated with the running binary outrank this Skill.
 
-## 3. Consult the official repository when local detail is absent
+## 3. Consult npm metadata when local detail is absent
 
-Official CLI repository:
-
-`https://gitlab.kuajingvs.com/com-bifang-workspace/multiagengorcli`
-
-Use read-only access to inspect its current HEAD, README, CLI reference, package metadata, command router, contracts, and changelog. Compare the installed version/commit with repository HEAD. If they differ, do not apply a new-source-only command to the old binary. Either use the installed interface or update the CLI as part of the requested outcome.
-
-Do not edit the CLI repository when the task is to operate or update this standalone Skill.
+Query the npm registry for the current `multiagentor-scenario-cli` version, Node engine, integrity, and included package metadata. When the installed version differs from npm latest, use the installed interface until the CLI update gate completes. Do not obtain CLI code from a Git repository.
 
 ## 4. Learn the live data model
 
 Run current read-only status/list/inspect/path operations and inspect the returned JSON. Determine identifiers, names, versions, states, paths, pagination, and optional fields from the actual response. Preserve unknown fields and avoid positional parsing of JSON.
 
-The service API can evolve. Use the CLI as the compatibility boundary. Do not call undocumented raw endpoints or fabricate response fields. If the CLI rejects a changed API response, record the exact error, compare the installed CLI with repository HEAD, and update or diagnose the CLI rather than guessing an endpoint.
+The service API can evolve. Use the CLI as the compatibility boundary. Do not call undocumented raw endpoints or fabricate response fields. If the CLI rejects a changed API response, record the exact error, compare the installed CLI with npm latest, and update or diagnose the installed npm package rather than guessing an endpoint.
 
 ## 5. Learn each scenario and run protocol
 
@@ -49,7 +43,7 @@ When a run starts, inspect its initial event and scenario path. Discover support
 
 Repeat discovery when any of these changes during the task:
 
-- launcher, version, source commit, data directory, or API base;
+- launcher, CLI/npm package version, data directory, or API base;
 - help output or JSON shape;
 - authentication account;
 - downloaded scenario version;

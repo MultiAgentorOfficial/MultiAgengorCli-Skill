@@ -1,9 +1,8 @@
 [CmdletBinding()]
 param(
-    [string]$Repository = 'https://gitlab.kuajingvs.com/com-bifang-workspace/multiagengorcli.git',
-    [string]$Ref = 'master',
+    [string]$PackageName = 'multiagentor-scenario-cli',
+    [string]$Registry = 'https://registry.npmjs.org',
     [string]$InstallRoot,
-    [string]$SourceDirectory,
     [switch]$CheckOnly
 )
 
@@ -18,125 +17,46 @@ if (-not $InstallRoot) {
     $InstallRoot = Join-Path $base 'multiagentor-scenario-cli\portable'
 }
 $InstallRoot = [IO.Path]::GetFullPath($InstallRoot)
+$Registry = $Registry.TrimEnd('/')
+$launcher = Join-Path $InstallRoot 'multiagentor.cmd'
 
-function Write-Result([hashtable]$Values) { $Values | ConvertTo-Json -Compress -Depth 5 }
-function Download([string]$Uri, [string]$OutFile) {
-    Invoke-WebRequest -UseBasicParsing -Headers @{ 'User-Agent' = 'multiagentor-skill-bootstrap' } -Uri $Uri -OutFile $OutFile
-}
-function Read-Package([string]$Root) {
-    $file = Join-Path $Root 'package.json'
-    if (-not (Test-Path -LiteralPath $file -PathType Leaf)) { throw "CLI package.json not found under $Root" }
-    return Get-Content -Raw -LiteralPath $file | ConvertFrom-Json
+function Emit([hashtable]$Values) { $Values | ConvertTo-Json -Compress -Depth 6 }
+function Download([string]$Uri, [string]$OutFile) { Invoke-WebRequest -UseBasicParsing -Headers @{ 'User-Agent' = 'multiagentor-skill-bootstrap' } -Uri $Uri -OutFile $OutFile }
+function Get-Metadata {
+    $document = Invoke-RestMethod -UseBasicParsing -Headers @{ 'User-Agent' = 'multiagentor-skill-bootstrap' } -Uri "$Registry/$([Uri]::EscapeDataString($PackageName))"
+    $latest = [string]$document.'dist-tags'.latest
+    $release = if ($latest) { $document.versions.$latest } else { $null }
+    if (-not $release) { throw "npm metadata has no latest release for $PackageName." }
+    $engine = [string]$release.engines.node
+    if ($engine -notmatch '>=\s*(\d+)') { throw "Unsupported Node engine expression: $engine" }
+    @{ Version = $latest; Engine = $engine; NodeMajor = [int]$Matches[1]; Integrity = [string]$release.dist.integrity }
 }
 
 if ($CheckOnly) {
-    $existingLauncher = Join-Path $InstallRoot 'multiagentor.cmd'
-    Write-Result @{
-        mode = 'check-only'; platform = 'win32-x64'; installRoot = $InstallRoot
-        installed = (Test-Path -LiteralPath $existingLauncher -PathType Leaf)
-        invocation = if (Test-Path -LiteralPath $existingLauncher) { $existingLauncher } else { $null }
-        repository = $Repository; ref = $Ref
-    }
+    Emit @{ mode = 'check-only'; platform = 'win32-x64'; installed = (Test-Path -LiteralPath $launcher -PathType Leaf); invocation = if (Test-Path -LiteralPath $launcher) { $launcher } else { $null }; packageName = $PackageName; registry = $Registry; installRoot = $InstallRoot }
     exit 0
 }
 
+$metadata = Get-Metadata
 New-Item -ItemType Directory -Force -Path $InstallRoot | Out-Null
 $work = Join-Path $InstallRoot ('.bootstrap-' + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $work | Out-Null
 try {
-    $sourceRoot = $null
-    $sourceCommit = $null
-    if ($SourceDirectory) {
-        $sourceRoot = (Resolve-Path -LiteralPath $SourceDirectory).Path
-    } else {
-        $sourceRoot = Join-Path $InstallRoot 'source'
-        $git = Get-Command git -ErrorAction SilentlyContinue
-        if ($git) {
-            if (Test-Path -LiteralPath (Join-Path $sourceRoot '.git')) {
-                $dirty = & $git.Source -C $sourceRoot status --porcelain
-                if ($LASTEXITCODE -ne 0 -or $dirty) { throw "Portable CLI source checkout is dirty or unreadable: $sourceRoot" }
-                & $git.Source -C $sourceRoot fetch --depth 1 origin $Ref
-                if ($LASTEXITCODE -ne 0) { throw 'Failed to fetch the CLI repository.' }
-                & $git.Source -C $sourceRoot checkout --detach FETCH_HEAD
-                if ($LASTEXITCODE -ne 0) { throw 'Failed to select the fetched CLI revision.' }
-            } elseif (Test-Path -LiteralPath $sourceRoot) {
-                $stagedSource = Join-Path $work 'source-git'
-                & $git.Source clone --depth 1 --branch $Ref $Repository $stagedSource
-                if ($LASTEXITCODE -ne 0) { throw 'Failed to clone the CLI repository.' }
-                if (-not (Test-Path -LiteralPath (Join-Path $stagedSource 'package.json') -PathType Leaf)) { throw 'Cloned CLI source does not contain package.json.' }
-                $rollbackSource = Join-Path $InstallRoot ('.source-rollback-' + [guid]::NewGuid().ToString('N'))
-                Move-Item -LiteralPath $sourceRoot -Destination $rollbackSource
-                try {
-                    Move-Item -LiteralPath $stagedSource -Destination $sourceRoot
-                    Remove-Item -LiteralPath $rollbackSource -Recurse -Force
-                } catch {
-                    if (Test-Path -LiteralPath $sourceRoot) { Remove-Item -LiteralPath $sourceRoot -Recurse -Force }
-                    Move-Item -LiteralPath $rollbackSource -Destination $sourceRoot
-                    throw
-                }
-            } else {
-                & $git.Source clone --depth 1 --branch $Ref $Repository $sourceRoot
-                if ($LASTEXITCODE -ne 0) { throw 'Failed to clone the CLI repository.' }
-            }
-            $sourceCommit = (& $git.Source -C $sourceRoot rev-parse HEAD).Trim()
-        } else {
-            $archiveBase = $Repository.TrimEnd('/') -replace '\.git$', ''
-            $archive = Join-Path $work 'source.zip'
-            Download "$archiveBase/-/archive/$Ref/multiagengorcli-$Ref.zip" $archive
-            $extract = Join-Path $work 'source-extract'
-            Expand-Archive -LiteralPath $archive -DestinationPath $extract
-            $extractedRoot = Get-ChildItem -LiteralPath $extract -Directory | Where-Object { Test-Path -LiteralPath (Join-Path $_.FullName 'package.json') } | Select-Object -First 1
-            if (-not $extractedRoot) { throw 'Downloaded CLI archive does not contain package.json.' }
-            $rollbackSource = $null
-            if (Test-Path -LiteralPath $sourceRoot) {
-                $rollbackSource = Join-Path $InstallRoot ('.source-rollback-' + [guid]::NewGuid().ToString('N'))
-                Move-Item -LiteralPath $sourceRoot -Destination $rollbackSource
-            }
-            try {
-                Move-Item -LiteralPath $extractedRoot.FullName -Destination $sourceRoot
-                if (-not (Test-Path -LiteralPath (Join-Path $sourceRoot 'package.json') -PathType Leaf)) { throw 'Installed CLI archive lacks package.json.' }
-                if ($rollbackSource) { Remove-Item -LiteralPath $rollbackSource -Recurse -Force }
-            } catch {
-                if (Test-Path -LiteralPath $sourceRoot) { Remove-Item -LiteralPath $sourceRoot -Recurse -Force }
-                if ($rollbackSource -and (Test-Path -LiteralPath $rollbackSource)) { Move-Item -LiteralPath $rollbackSource -Destination $sourceRoot }
-                throw
-            }
-        }
-    }
-
-    if (-not $sourceCommit) {
-        $gitForSource = Get-Command git -ErrorAction SilentlyContinue
-        if ($gitForSource -and (Test-Path -LiteralPath (Join-Path $sourceRoot '.git'))) {
-            $candidateCommit = (& $gitForSource.Source -C $sourceRoot rev-parse HEAD 2>$null | Select-Object -First 1)
-            if ($candidateCommit -match '^[0-9a-f]{40}$') { $sourceCommit = $candidateCommit }
-        }
-    }
-
-    $package = Read-Package $sourceRoot
-    $engine = [string]$package.engines.node
-    if ($engine -notmatch '>=\s*(\d+)') { throw "Unsupported Node engine expression for portable bootstrap: $engine" }
-    $nodeMajor = [int]$Matches[1]
-    $packageManager = [string]$package.packageManager
-    if ($packageManager -notmatch '^pnpm@(\d+\.\d+\.\d+)$') { throw "Unsupported packageManager: $packageManager" }
-    $pnpmVersion = $Matches[1]
-
     $index = Invoke-RestMethod -UseBasicParsing -Headers @{ 'User-Agent' = 'multiagentor-skill-bootstrap' } -Uri 'https://nodejs.org/dist/index.json'
-    $release = $index | Where-Object { $_.lts -and ([int](($_.version -replace '^v','').Split('.')[0])) -eq $nodeMajor -and $_.files -contains 'win-x64-zip' } | Select-Object -First 1
-    if (-not $release) { throw "No Node.js LTS win-x64 ZIP found for major $nodeMajor." }
+    $release = $index | Where-Object { $_.lts -and ([int](($_.version -replace '^v','').Split('.')[0])) -eq $metadata.NodeMajor -and $_.files -contains 'win-x64-zip' } | Select-Object -First 1
+    if (-not $release) { throw "No Node.js LTS win-x64 ZIP found for major $($metadata.NodeMajor)." }
     $nodeVersion = [string]$release.version
-    $nodeArchiveName = "node-$nodeVersion-win-x64.zip"
+    $archiveName = "node-$nodeVersion-win-x64.zip"
     $nodeRoot = Join-Path $InstallRoot "runtime\$nodeVersion"
     $nodeExe = Join-Path $nodeRoot 'node.exe'
     if (-not (Test-Path -LiteralPath $nodeExe -PathType Leaf)) {
-        $archive = Join-Path $work $nodeArchiveName
+        $archive = Join-Path $work $archiveName
         $checksums = Join-Path $work 'SHASUMS256.txt'
-        Download "https://nodejs.org/dist/$nodeVersion/$nodeArchiveName" $archive
+        Download "https://nodejs.org/dist/$nodeVersion/$archiveName" $archive
         Download "https://nodejs.org/dist/$nodeVersion/SHASUMS256.txt" $checksums
-        $expectedLine = Get-Content -LiteralPath $checksums | Where-Object { $_ -match "\s+$([regex]::Escape($nodeArchiveName))$" } | Select-Object -First 1
-        if (-not $expectedLine) { throw 'Node.js checksum entry was not found.' }
-        $expected = ($expectedLine -split '\s+')[0].ToLowerInvariant()
-        $actual = (Get-FileHash -Algorithm SHA256 -LiteralPath $archive).Hash.ToLowerInvariant()
-        if ($actual -ne $expected) { throw 'Node.js archive checksum mismatch.' }
+        $line = Get-Content -LiteralPath $checksums | Where-Object { $_ -match "\s+$([regex]::Escape($archiveName))$" } | Select-Object -First 1
+        if (-not $line) { throw 'Node.js checksum entry was not found.' }
+        if ((Get-FileHash -Algorithm SHA256 -LiteralPath $archive).Hash.ToLowerInvariant() -ne (($line -split '\s+')[0].ToLowerInvariant())) { throw 'Node.js archive checksum mismatch.' }
         $extract = Join-Path $work 'node-extract'
         Expand-Archive -LiteralPath $archive -DestinationPath $extract
         $expanded = Get-ChildItem -LiteralPath $extract -Directory | Select-Object -First 1
@@ -144,35 +64,44 @@ try {
         Move-Item -LiteralPath $expanded.FullName -Destination $nodeRoot
     }
 
+    $stage = Join-Path $work 'package'
+    New-Item -ItemType Directory -Path $stage | Out-Null
+    $npm = Join-Path $nodeRoot 'npm.cmd'
     $oldPath = $env:Path
     $env:Path = "$nodeRoot;$oldPath"
     try {
-        $activeNode = (& $nodeExe --version).Trim()
-        if (-not $activeNode.StartsWith("v$nodeMajor.")) { throw "Selected Node runtime is incompatible: $activeNode for $engine" }
-        $toolsRoot = Join-Path $InstallRoot 'tools'
-        $npm = Join-Path $nodeRoot 'npm.cmd'
-        & $npm install --prefix $toolsRoot --no-save --no-package-lock "pnpm@$pnpmVersion"
-        if ($LASTEXITCODE -ne 0) { throw 'Failed to install the required pnpm version.' }
-        $pnpm = Join-Path $toolsRoot 'node_modules\pnpm\bin\pnpm.cjs'
-        & $nodeExe $pnpm --dir $sourceRoot install --frozen-lockfile
-        if ($LASTEXITCODE -ne 0) { throw 'CLI dependency installation failed.' }
-        & $nodeExe $pnpm --dir $sourceRoot build
-        if ($LASTEXITCODE -ne 0) { throw 'CLI build failed.' }
+        & $npm install --global --prefix $stage "$PackageName@$($metadata.Version)" --registry $Registry --no-audit --no-fund
+        if ($LASTEXITCODE -ne 0) { throw 'npm CLI installation failed.' }
     } finally { $env:Path = $oldPath }
 
-    $entry = Join-Path $sourceRoot 'dist\bin\multiagentor.js'
-    if (-not (Test-Path -LiteralPath $entry -PathType Leaf)) { throw 'Built CLI entrypoint is missing.' }
-    $launcher = Join-Path $InstallRoot 'multiagentor.cmd'
-    @("@echo off", "`"$nodeExe`" `"$entry`" %*") | Set-Content -LiteralPath $launcher -Encoding ascii
+    $packageRoot = Join-Path $stage "node_modules\$PackageName"
+    $packageFile = Join-Path $packageRoot 'package.json'
+    if (-not (Test-Path -LiteralPath $packageFile -PathType Leaf)) { throw 'Installed npm package is missing package.json.' }
+    $package = Get-Content -Raw -LiteralPath $packageFile | ConvertFrom-Json
+    $binRelative = if ($package.bin -is [string]) { [string]$package.bin } elseif ($package.bin.multiagentor) { [string]$package.bin.multiagentor } else { [string]($package.bin.PSObject.Properties | Select-Object -First 1).Value }
+    $entry = Join-Path $packageRoot $binRelative
+    if (-not (Test-Path -LiteralPath $entry -PathType Leaf)) { throw 'Installed npm package is missing its CLI entrypoint.' }
     $version = (& $nodeExe $entry --version).Trim()
     & $nodeExe $entry --help | Out-Null
-    if ($LASTEXITCODE -ne 0) { throw 'Built CLI help verification failed.' }
-    Write-Result @{
-        mode = 'installed'; platform = 'win32-x64'; invocation = $launcher
-        cliVersion = $version; nodeVersion = $nodeVersion; pnpmVersion = $pnpmVersion
-        nodeEngine = $engine; source = $sourceRoot; sourceCommit = $sourceCommit
-        repository = $Repository; ref = $Ref; installRoot = $InstallRoot
+    if ($LASTEXITCODE -ne 0) { throw 'Installed CLI help verification failed.' }
+
+    $target = Join-Path $InstallRoot 'package'
+    $rollback = $null
+    if (Test-Path -LiteralPath $target) { $rollback = Join-Path $InstallRoot ('.package-rollback-' + [guid]::NewGuid().ToString('N')); Move-Item -LiteralPath $target -Destination $rollback }
+    try {
+        Move-Item -LiteralPath $stage -Destination $target
+        $stableEntry = Join-Path $target "node_modules\$PackageName\$binRelative"
+        @('@echo off', "`"$nodeExe`" `"$stableEntry`" %*") | Set-Content -LiteralPath $launcher -Encoding ascii
+        & $launcher --help | Out-Null
+        if ($LASTEXITCODE -ne 0) { throw 'Stable CLI launcher verification failed.' }
+        if ($rollback) { Remove-Item -LiteralPath $rollback -Recurse -Force }
+    } catch {
+        if (Test-Path -LiteralPath $target) { Remove-Item -LiteralPath $target -Recurse -Force }
+        if ($rollback -and (Test-Path -LiteralPath $rollback)) { Move-Item -LiteralPath $rollback -Destination $target }
+        throw
     }
+
+    Emit @{ mode = 'installed'; platform = 'win32-x64'; invocation = $launcher; cliVersion = $version; nodeVersion = $nodeVersion; npmVersion = (& $npm --version).Trim(); nodeEngine = $metadata.Engine; packageName = $PackageName; registry = $Registry; integrity = $metadata.Integrity; installRoot = $InstallRoot }
 } finally {
     if (Test-Path -LiteralPath $work) { Remove-Item -LiteralPath $work -Recurse -Force -ErrorAction SilentlyContinue }
 }

@@ -60,6 +60,6 @@ Starting is not completing. Do not detach unless the user explicitly asks for st
 2. Wait for the matching response and final event.
 3. Use separate read-only run inspection/log operations when needed.
 4. Read the actual result/evidence file and verify the Profile lock was released.
-5. Report the Skill version, CLI version/source commit, Node runtime, workspace/API base, scenario/version, task/run/browser IDs, effective non-sensitive parameters, terminal status/reason, action counts, and artifact paths.
+5. Report the Skill version, CLI/npm package version, Node runtime, workspace/API base, scenario/version, task/run/browser IDs, effective non-sensitive parameters, terminal status/reason, action counts, and artifact paths.
 
 Browser action success is not business success. Determine outcome from the scenario's current terminal condition and observed page.

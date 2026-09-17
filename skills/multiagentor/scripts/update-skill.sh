@@ -31,7 +31,10 @@ local_ok=true; integrity "$skill_root" || local_ok=false
 work="$(mktemp -d "$(dirname "$skill_root")/.multiagentor-update.XXXXXX")"
 trap 'rm -rf "$work"' EXIT
 cache_key="$(date +%s)"
-curl -fL --retry 3 -H 'Cache-Control: no-cache' -o "$work/remote-SKILL.md" "https://raw.githubusercontent.com/$repository/$ref/skills/multiagentor/SKILL.md?cache=$cache_key"
+curl -fsSL --retry 3 -H 'Cache-Control: no-cache' -H 'Accept: application/vnd.github+json' -o "$work/commit.json" "https://api.github.com/repos/$repository/commits/$ref?cache=$cache_key"
+remote_sha="$(sed -nE 's/^[[:space:]]*"sha":[[:space:]]*"([0-9a-f]{40})",?[[:space:]]*$/\1/p' "$work/commit.json" | head -n 1)"
+[[ "$remote_sha" =~ ^[0-9a-f]{40}$ ]] || { echo 'GitHub returned an invalid Skill repository commit.' >&2; exit 1; }
+curl -fL --retry 3 -o "$work/remote-SKILL.md" "https://raw.githubusercontent.com/$repository/$remote_sha/skills/multiagentor/SKILL.md"
 latest="$(read_version "$work/remote-SKILL.md")"; valid_version "$latest" || { echo 'Invalid remote Skill version.' >&2; exit 1; }
 
 needs=false
@@ -40,7 +43,7 @@ version_gt "$latest" "$current" && needs=true
 if [[ "$needs" == false ]]; then emit "$current" "$latest" false true current; exit 0; fi
 if [[ $check_only -eq 1 ]]; then emit "$current" "$latest" false "$local_ok" available-or-repair; exit 0; fi
 
-curl -fL --retry 3 -H 'Cache-Control: no-cache' -o "$work/repository.zip" "https://github.com/$repository/archive/refs/heads/$ref.zip?cache=$cache_key"
+curl -fL --retry 3 -o "$work/repository.zip" "https://codeload.github.com/$repository/zip/$remote_sha"
 mkdir -p "$work/extract"
 ditto -x -k "$work/repository.zip" "$work/extract"
 source_root="$(find "$work/extract" -path '*/skills/multiagentor/SKILL.md' -print | head -n 1 | sed 's#/SKILL.md$##')"

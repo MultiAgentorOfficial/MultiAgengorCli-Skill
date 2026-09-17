@@ -42,8 +42,11 @@ $current = Read-SkillIdentity $localFile
 $integrity = Test-Integrity $skillRoot
 $encodedRef = [Uri]::EscapeDataString($Ref)
 $cacheKey = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
-$headers = @{ 'User-Agent' = 'multiagentor-skill-updater'; 'Cache-Control' = 'no-cache' }
-$remoteUrl = "https://raw.githubusercontent.com/$Repository/$encodedRef/skills/multiagentor/SKILL.md?cache=$cacheKey"
+$headers = @{ 'User-Agent' = 'multiagentor-skill-updater'; 'Cache-Control' = 'no-cache'; 'Accept' = 'application/vnd.github+json' }
+$commit = Invoke-RestMethod -UseBasicParsing -Headers $headers -Uri "https://api.github.com/repos/$Repository/commits/${encodedRef}?cache=$cacheKey"
+$remoteSha = ([string]$commit.sha).Trim()
+if ($remoteSha -notmatch '^[0-9a-f]{40}$') { throw 'GitHub returned an invalid Skill repository commit.' }
+$remoteUrl = "https://raw.githubusercontent.com/$Repository/$remoteSha/skills/multiagentor/SKILL.md"
 $remoteText = Invoke-RestMethod -UseBasicParsing -Headers $headers -Uri $remoteUrl
 $remoteTemp = Join-Path ([IO.Path]::GetTempPath()) ("multiagentor-skill-" + [guid]::NewGuid().ToString('N') + '.md')
 [IO.File]::WriteAllText($remoteTemp, [string]$remoteText, [Text.UTF8Encoding]::new($false))
@@ -62,7 +65,7 @@ New-Item -ItemType Directory -Path $work | Out-Null
 $replaced = $false
 try {
     $archive = Join-Path $work 'repository.zip'
-    Invoke-WebRequest -UseBasicParsing -Headers $headers -Uri "https://github.com/$Repository/archive/refs/heads/$encodedRef.zip?cache=$cacheKey" -OutFile $archive
+    Invoke-WebRequest -UseBasicParsing -Headers $headers -Uri "https://codeload.github.com/$Repository/zip/$remoteSha" -OutFile $archive
     $extract = Join-Path $work 'extract'
     Expand-Archive -LiteralPath $archive -DestinationPath $extract
     $source = Get-ChildItem -LiteralPath $extract -Directory | ForEach-Object { Join-Path $_.FullName 'skills\multiagentor' } | Where-Object { Test-Path -LiteralPath (Join-Path $_ 'SKILL.md') } | Select-Object -First 1

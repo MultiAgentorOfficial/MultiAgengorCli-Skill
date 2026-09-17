@@ -41,8 +41,10 @@ $localFile = Join-Path $skillRoot 'SKILL.md'
 $current = Read-SkillIdentity $localFile
 $integrity = Test-Integrity $skillRoot
 $encodedRef = [Uri]::EscapeDataString($Ref)
-$remoteUrl = "https://raw.githubusercontent.com/$Repository/$encodedRef/skills/multiagentor/SKILL.md"
-$remoteText = Invoke-RestMethod -UseBasicParsing -Headers @{ 'User-Agent' = 'multiagentor-skill-updater' } -Uri $remoteUrl
+$cacheKey = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
+$headers = @{ 'User-Agent' = 'multiagentor-skill-updater'; 'Cache-Control' = 'no-cache' }
+$remoteUrl = "https://raw.githubusercontent.com/$Repository/$encodedRef/skills/multiagentor/SKILL.md?cache=$cacheKey"
+$remoteText = Invoke-RestMethod -UseBasicParsing -Headers $headers -Uri $remoteUrl
 $remoteTemp = Join-Path ([IO.Path]::GetTempPath()) ("multiagentor-skill-" + [guid]::NewGuid().ToString('N') + '.md')
 [IO.File]::WriteAllText($remoteTemp, [string]$remoteText, [Text.UTF8Encoding]::new($false))
 try { $latest = Read-SkillIdentity $remoteTemp } finally { Remove-Item -LiteralPath $remoteTemp -Force -ErrorAction SilentlyContinue }
@@ -60,7 +62,7 @@ New-Item -ItemType Directory -Path $work | Out-Null
 $replaced = $false
 try {
     $archive = Join-Path $work 'repository.zip'
-    Invoke-WebRequest -UseBasicParsing -Headers @{ 'User-Agent' = 'multiagentor-skill-updater' } -Uri "https://github.com/$Repository/archive/refs/heads/$encodedRef.zip" -OutFile $archive
+    Invoke-WebRequest -UseBasicParsing -Headers $headers -Uri "https://github.com/$Repository/archive/refs/heads/$encodedRef.zip?cache=$cacheKey" -OutFile $archive
     $extract = Join-Path $work 'extract'
     Expand-Archive -LiteralPath $archive -DestinationPath $extract
     $source = Get-ChildItem -LiteralPath $extract -Directory | ForEach-Object { Join-Path $_.FullName 'skills\multiagentor' } | Where-Object { Test-Path -LiteralPath (Join-Path $_ 'SKILL.md') } | Select-Object -First 1

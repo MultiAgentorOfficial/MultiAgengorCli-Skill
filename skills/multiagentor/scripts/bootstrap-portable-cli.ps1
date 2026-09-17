@@ -60,7 +60,20 @@ try {
                 & $git.Source -C $sourceRoot checkout --detach FETCH_HEAD
                 if ($LASTEXITCODE -ne 0) { throw 'Failed to select the fetched CLI revision.' }
             } elseif (Test-Path -LiteralPath $sourceRoot) {
-                throw "Source path exists but is not a Git checkout: $sourceRoot"
+                $stagedSource = Join-Path $work 'source-git'
+                & $git.Source clone --depth 1 --branch $Ref $Repository $stagedSource
+                if ($LASTEXITCODE -ne 0) { throw 'Failed to clone the CLI repository.' }
+                if (-not (Test-Path -LiteralPath (Join-Path $stagedSource 'package.json') -PathType Leaf)) { throw 'Cloned CLI source does not contain package.json.' }
+                $rollbackSource = Join-Path $InstallRoot ('.source-rollback-' + [guid]::NewGuid().ToString('N'))
+                Move-Item -LiteralPath $sourceRoot -Destination $rollbackSource
+                try {
+                    Move-Item -LiteralPath $stagedSource -Destination $sourceRoot
+                    Remove-Item -LiteralPath $rollbackSource -Recurse -Force
+                } catch {
+                    if (Test-Path -LiteralPath $sourceRoot) { Remove-Item -LiteralPath $sourceRoot -Recurse -Force }
+                    Move-Item -LiteralPath $rollbackSource -Destination $sourceRoot
+                    throw
+                }
             } else {
                 & $git.Source clone --depth 1 --branch $Ref $Repository $sourceRoot
                 if ($LASTEXITCODE -ne 0) { throw 'Failed to clone the CLI repository.' }
@@ -74,8 +87,20 @@ try {
             Expand-Archive -LiteralPath $archive -DestinationPath $extract
             $extractedRoot = Get-ChildItem -LiteralPath $extract -Directory | Where-Object { Test-Path -LiteralPath (Join-Path $_.FullName 'package.json') } | Select-Object -First 1
             if (-not $extractedRoot) { throw 'Downloaded CLI archive does not contain package.json.' }
-            if (Test-Path -LiteralPath $sourceRoot) { throw "Cannot replace existing non-Git source automatically: $sourceRoot" }
-            Move-Item -LiteralPath $extractedRoot.FullName -Destination $sourceRoot
+            $rollbackSource = $null
+            if (Test-Path -LiteralPath $sourceRoot) {
+                $rollbackSource = Join-Path $InstallRoot ('.source-rollback-' + [guid]::NewGuid().ToString('N'))
+                Move-Item -LiteralPath $sourceRoot -Destination $rollbackSource
+            }
+            try {
+                Move-Item -LiteralPath $extractedRoot.FullName -Destination $sourceRoot
+                if (-not (Test-Path -LiteralPath (Join-Path $sourceRoot 'package.json') -PathType Leaf)) { throw 'Installed CLI archive lacks package.json.' }
+                if ($rollbackSource) { Remove-Item -LiteralPath $rollbackSource -Recurse -Force }
+            } catch {
+                if (Test-Path -LiteralPath $sourceRoot) { Remove-Item -LiteralPath $sourceRoot -Recurse -Force }
+                if ($rollbackSource -and (Test-Path -LiteralPath $rollbackSource)) { Move-Item -LiteralPath $rollbackSource -Destination $sourceRoot }
+                throw
+            }
         }
     }
 

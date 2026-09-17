@@ -10,7 +10,7 @@
     {
       "id": "skill-version-frontmatter",
       "prompt": "检查 MultiAgentor Skill 自己是不是最新版，不要自动覆盖任何文件。",
-      "expected_output": "从 SKILL.md frontmatter 的 metadata.version 读取唯一 Skill 版本，检查 Git origin、当前提交、远端 HEAD 和脏状态。只报告差异，不读取 VERSION 文件、不自动 pull、不覆盖脏工作区。"
+      "expected_output": "从 SKILL.md frontmatter 的 metadata.version 读取唯一 Skill 版本，运行 update-skill 的 check-only 模式比较官方仓库版本并检查安装完整性。只报告差异，不读取 VERSION 文件、不覆盖任何文件。"
     },
     {
       "id": "cli-version-same-semver-different-commit",
@@ -61,6 +61,16 @@
       "id": "clean-macos-no-node",
       "prompt": "Apple Silicon Mac 没有 Node 环境，帮我完整安装 MultiAgentor CLI。",
       "expected_output": "确认 Darwin arm64 后运行 macOS portable bootstrap；依据当前源码要求选择 Node LTS 的 osx-arm64-tar 索引项，下载官方 darwin-arm64.tar.gz 与 SHASUMS256.txt 并验证。安装精确 pnpm、冻结依赖、构建 CLI、创建用户目录内固定启动器并验证。Intel Mac 或不受支持的平台必须停止。"
+    },
+    {
+      "id": "replace-old-skill",
+      "prompt": "检查 MultiAgentor Skill 更新；有新版就直接覆盖旧 Skill。",
+      "expected_output": "在工作流开始时只运行一次平台 update-skill 脚本，从本地和远端 SKILL.md metadata.version 比较严格 SemVer。发现新版或安装不完整时下载官方仓库归档，验证 name、版本和关键文件，原子替换整个 multiagentor 目录；旧目录只用于失败回滚，成功后删除。返回 updated/restartRequired，并在更新后停止当前流程，要求新建 Agent 任务。"
+    },
+    {
+      "id": "update-managed-cli",
+      "prompt": "检查 CLI 有没有更新；有新版就覆盖旧的，电脑可能没有 Git 和 Node。",
+      "expected_output": "确认没有活动 Run 后运行平台 update-cli。存在 Git 管理源码时比较本地提交和官方 master HEAD；无 Git 时刷新官方源码归档。缺少 Node 时由 portable bootstrap 根据当前 package.json 下载并校验兼容 Node LTS、安装精确 pnpm、冻结依赖并构建。验证新启动器的版本和帮助，返回并固定 invocation；不覆盖用户自带的源码目录。"
     }
   ]
 }

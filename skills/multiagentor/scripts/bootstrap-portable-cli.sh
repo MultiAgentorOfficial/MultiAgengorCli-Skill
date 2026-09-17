@@ -41,7 +41,19 @@ else
       git -C "$source_root" fetch --depth 1 origin "$ref"
       git -C "$source_root" checkout --detach FETCH_HEAD
     elif [[ -e "$source_root" ]]; then
-      echo "Source path exists but is not a Git checkout: $source_root" >&2; exit 1
+      staged_source="$work/source-git"
+      git clone --depth 1 --branch "$ref" "$repository" "$staged_source"
+      [[ -f "$staged_source/package.json" ]] || { echo "Cloned CLI source lacks package.json" >&2; exit 1; }
+      rollback_source="$install_root/.source-rollback.$$.$RANDOM"
+      mv "$source_root" "$rollback_source"
+      if mv "$staged_source" "$source_root" && [[ -f "$source_root/package.json" ]]; then
+        rm -rf "$rollback_source"
+      else
+        rm -rf "$source_root"
+        mv "$rollback_source" "$source_root"
+        echo "CLI source replacement failed and was rolled back." >&2
+        exit 1
+      fi
     else
       git clone --depth 1 --branch "$ref" "$repository" "$source_root"
     fi
@@ -52,8 +64,19 @@ else
     ditto -x -k "$work/source.zip" "$work/source-extract"
     extracted="$(find "$work/source-extract" -mindepth 1 -maxdepth 1 -type d | head -n 1)"
     [[ -f "$extracted/package.json" ]] || { echo "CLI archive lacks package.json" >&2; exit 1; }
-    [[ ! -e "$source_root" ]] || { echo "Cannot replace existing non-Git source: $source_root" >&2; exit 1; }
-    mv "$extracted" "$source_root"
+    rollback_source=""
+    if [[ -e "$source_root" ]]; then
+      rollback_source="$install_root/.source-rollback.$$.$RANDOM"
+      mv "$source_root" "$rollback_source"
+    fi
+    if mv "$extracted" "$source_root" && [[ -f "$source_root/package.json" ]]; then
+      [[ -z "$rollback_source" ]] || rm -rf "$rollback_source"
+    else
+      rm -rf "$source_root"
+      [[ -z "$rollback_source" ]] || mv "$rollback_source" "$source_root"
+      echo "CLI source replacement failed and was rolled back." >&2
+      exit 1
+    fi
   fi
 fi
 

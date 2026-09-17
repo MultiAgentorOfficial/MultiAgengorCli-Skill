@@ -2,7 +2,7 @@
 name: multiagentor
 description: Dynamically discover, install, operate, and troubleshoot MultiAgentor Scenario CLI capabilities. Use for service accounts, scenarios, persistent browser identities, tasks, supervised browser runs, evidence, and workspace operations as the CLI and service API evolve.
 metadata:
-  version: "1.0.0"
+  version: "1.1.0"
 ---
 
 # MultiAgentor
@@ -15,7 +15,7 @@ Follow these stages in order:
 
 1. **Environment check:** detect OS/architecture, Node runtime, NVM, CLI launcher, data directory, API base, and browser runtime override. Read [installation.md](references/installation.md). On Windows, prefer `scripts/check-environment.ps1`; on macOS, prefer `scripts/check-environment.sh`.
 2. **Version check:** compare the running CLI version and source/package identity with its local checkout and the official repository HEAD. Pin one launcher/version for the current run. Do not update while a browser run is active.
-3. **Install or update when needed:** derive Node and package manager requirements from the current CLI repository's `package.json`; select a matching NVM runtime; install dependencies, build, install the shim, and verify the resulting path/version/help.
+3. **Install or update when needed:** derive Node and package manager requirements from the current CLI repository's `package.json`. Use a compatible existing/NVM runtime, or run the platform portable bootstrap when Node is missing. Build the CLI and verify the resulting launcher/version/help.
 4. **Discover the live interface:** read [dynamic-discovery.md](references/dynamic-discovery.md), then query current help, local compiled validation code, returned JSON, and downloaded scenario files.
 5. **Execute the scenario workflow:** authenticate, obtain a scenario, prepare a persistent browser identity, create a task, and supervise its foreground JSONL session. Read [execution-workflow.md](references/execution-workflow.md) and [supervised-execution.md](references/supervised-execution.md).
 6. **Close and verify:** drive the run to an advertised terminal state, read actual evidence/result files, verify Profile release, and report exact versions, IDs, status, reason, and artifact paths.

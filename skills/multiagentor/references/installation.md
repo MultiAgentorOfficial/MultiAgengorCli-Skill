@@ -22,6 +22,15 @@ The helper reports facts and does not install or switch anything. Validate:
 
 Read requirements from the current `package.json` and repository documentation. At the source revision used to create this Skill, browser execution supported Windows x64 and Apple Silicon macOS; verify this again rather than treating it as permanent.
 
+When Node is missing or no installed/NVM version satisfies the CLI requirement, use the platform portable bootstrap:
+
+```text
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/bootstrap-portable-cli.ps1
+bash scripts/bootstrap-portable-cli.sh
+```
+
+Parse the final JSON object and preserve its `invocation` value for the entire workflow. The scripts install under the current user's application data, never modify machine-wide PATH, and keep Skill/CLI data separate.
+
 ## 2. Resolve and pin the launcher
 
 Prefer the user-provided command or path. Otherwise check `MULTIAGENTOR_CLI_PATH`, `multiagentor` on `PATH`, then a local checkout containing `dist/bin/multiagentor.js`.
@@ -64,6 +73,23 @@ Read the `engines.node` range from the selected source revision. Use `nvm list` 
 Package-manager lifecycle scripts resolve `node` from the child process `PATH`. When directly selecting an NVM runtime, prepend that runtime directory to the command's process-local `PATH` and verify `node --version` inside the same process before installing dependencies. Calling a selected `node.exe` for only the package-manager entry script is insufficient if its child scripts still resolve a different system Node.
 
 Install a new Node version only when none of the existing NVM runtimes satisfies the repository requirement and installation is part of the requested setup.
+
+### No Node environment
+
+The portable bootstrap performs the complete clean-machine path:
+
+1. Detect and reject unsupported OS/architecture.
+2. Obtain the current CLI source from its configured Git repository, or use a caller-supplied source directory.
+3. Read `engines.node` and `packageManager` from that source.
+4. Select the matching Node LTS platform archive from the official Node distribution index.
+5. Download the archive and `SHASUMS256.txt`, then verify SHA-256 before extraction.
+6. Install Node in a user-local versioned runtime directory.
+7. Install the exact pnpm version declared by the CLI source.
+8. Install dependencies with the frozen lockfile and build the CLI.
+9. Generate a stable launcher that always uses the portable Node and built CLI entrypoint.
+10. Verify the launcher with live version and help calls, then return its path as JSON.
+
+Use `--check-only` / `-CheckOnly` for a non-mutating readiness check. On authenticated or private GitLab deployments, provide a prepared source checkout when archive or Git authentication is unavailable. Never put access tokens into script arguments or logs.
 
 ## 5. Install or update from the CLI repository
 

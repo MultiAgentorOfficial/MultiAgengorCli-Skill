@@ -50,7 +50,17 @@
     {
       "id": "schema-mismatch",
       "prompt": "CLI 返回 INVALID_API_RESPONSE，帮我修好流程。",
-      "expected_output": "保留完整非敏感错误，比较执行二进制、源码提交与远端 HEAD，检查当前 CLI 期望的响应验证结构。优先更新或诊断 CLI 兼容层，不猜接口字段、不直接调用未记录端点，也不套用参考 GitHub 仓库中的旧 CLI 命令。"
+      "expected_output": "保留完整非敏感错误，比较执行二进制、源码提交与远端 HEAD，检查当前 CLI 期望的响应验证结构。优先更新或诊断 CLI 兼容层，不猜接口字段、不直接调用未记录端点，也不套用其他 CLI 的旧命令。"
+    },
+    {
+      "id": "clean-windows-no-node",
+      "prompt": "这是一台全新的 Windows x64 电脑，没有 Node、npm 或 pnpm。安装当前 CLI 并检查版本。",
+      "expected_output": "运行 Windows portable bootstrap；获取当前 CLI 源码并读取 engines.node/packageManager，从 nodejs.org 选择对应 Node LTS win-x64 ZIP，同时下载 SHASUMS256.txt 并核对 SHA-256。把 Node、精确 pnpm 和源码构建安装到用户本地目录，生成固定 multiagentor.cmd，不修改系统 PATH。最后用返回的 invocation 验证版本、帮助和只读工作区命令。"
+    },
+    {
+      "id": "clean-macos-no-node",
+      "prompt": "Apple Silicon Mac 没有 Node 环境，帮我完整安装 MultiAgentor CLI。",
+      "expected_output": "确认 Darwin arm64 后运行 macOS portable bootstrap；依据当前源码要求选择 Node LTS 的 osx-arm64-tar 索引项，下载官方 darwin-arm64.tar.gz 与 SHASUMS256.txt 并验证。安装精确 pnpm、冻结依赖、构建 CLI、创建用户目录内固定启动器并验证。Intel Mac 或不受支持的平台必须停止。"
     }
   ]
 }

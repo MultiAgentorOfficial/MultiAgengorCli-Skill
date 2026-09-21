@@ -30,7 +30,7 @@ Once selected, pin them for the entire workflow.
 
 ## 2. MultiAgentor authentication gate
 
-If `auth status` does not report `authenticated: true`, explain that MultiAgentor account login is required and use [authentication.md](authentication.md). Do not ask for the email or password in chat. After the local window completes, run `auth status` again before continuing.
+If `auth status` does not report `authenticated: true`, explain that MultiAgentor OAuth authorization is required and use [authentication.md](authentication.md). Open the visible OAuth flow; do not ask for an email, password, token, or code in chat. After the local window completes, run `auth status` again before continuing.
 
 ## 3. Confirm the scenario
 
@@ -186,7 +186,7 @@ Start the foreground run only after confirmation. Follow [supervised-execution.m
 
 ## Current CLI choice matrix
 
-Use live help as the authority, but for CLI `0.1.0` the guided choices map to these operations:
+Use live help as the authority. For the current CLI family, the guided choices map to these operations:
 
 | User decision | Current operation and required choices |
 | --- | --- |
@@ -202,7 +202,7 @@ Use live help as the authority, but for CLI `0.1.0` the guided choices map to th
 
 Do not offer fields absent from the live CLI. When a later CLI adds fields, discover them and add them to the user choices for that run.
 
-For CLI `0.1.0`, `browser create` has this effective parameter contract:
+For CLI `0.1.2`, `browser create` has this effective parameter contract:
 
 | Parameter | CLI behavior | Skill source |
 | --- | --- | --- |

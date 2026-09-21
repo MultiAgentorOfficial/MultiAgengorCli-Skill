@@ -34,7 +34,9 @@ $managedBrowserMajor = if ($managedBrowserVersion -match '^(\d+)') { [int]$Match
 
 $latest = $null; $nodeEngine = $null; $integrity = $null
 if ($CheckRemote) {
-    $document = Invoke-RestMethod -UseBasicParsing -Headers @{ 'User-Agent' = 'multiagentor-skill-environment-check' } -Uri "$($Registry.TrimEnd('/'))/$([Uri]::EscapeDataString($PackageName))"
+    $cacheKey = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
+    $headers = @{ 'User-Agent' = 'multiagentor-skill-environment-check'; 'Cache-Control' = 'no-cache, no-store'; 'Pragma' = 'no-cache' }
+    $document = Invoke-RestMethod -UseBasicParsing -Headers $headers -Uri "$($Registry.TrimEnd('/'))/$([Uri]::EscapeDataString($PackageName))?cache=$cacheKey"
     $latest = [string]$document.'dist-tags'.latest
     if ($latest -and $document.versions.$latest) { $nodeEngine = [string]$document.versions.$latest.engines.node; $integrity = [string]$document.versions.$latest.dist.integrity }
 }

@@ -19,7 +19,8 @@ json_escape() { local v="${1:-}"; v="${v//\\/\\\\}"; v="${v//\"/\\\"}"; printf '
 launcher="$install_root/multiagentor"
 work="$(mktemp -d "${TMPDIR:-/tmp}/multiagentor-update.XXXXXX")"
 trap 'rm -rf "$work"' EXIT
-curl -fsSL --retry 3 -H 'User-Agent: multiagentor-skill-updater' -o "$work/latest.json" "$registry/$package_name/latest"
+cache_key="$(date +%s)"
+curl -fsSL --retry 3 -H 'User-Agent: multiagentor-skill-updater' -H 'Cache-Control: no-cache, no-store' -H 'Pragma: no-cache' -o "$work/latest.json" "$registry/$package_name/latest?cache=$cache_key"
 latest="$(tr -d '\n' < "$work/latest.json" | sed -nE 's/.*"version":"([^"]+)".*/\1/p')"
 engine="$(tr -d '\n' < "$work/latest.json" | sed -nE 's/.*"engines":\{"node":"([^"]+)"\}.*/\1/p')"
 integrity="$(tr -d '\n' < "$work/latest.json" | sed -nE 's/.*"integrity":"([^"]+)".*/\1/p')"

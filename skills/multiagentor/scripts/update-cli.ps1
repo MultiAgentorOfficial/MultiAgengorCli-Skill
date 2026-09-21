@@ -25,7 +25,9 @@ function Get-CliVersion([string]$Path) {
 }
 function Emit([hashtable]$Values) { $Values | ConvertTo-Json -Compress -Depth 5 }
 
-$document = Invoke-RestMethod -UseBasicParsing -Headers @{ 'User-Agent' = 'multiagentor-skill-updater' } -Uri "$Registry/$([Uri]::EscapeDataString($PackageName))"
+$cacheKey = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
+$headers = @{ 'User-Agent' = 'multiagentor-skill-updater'; 'Cache-Control' = 'no-cache, no-store'; 'Pragma' = 'no-cache' }
+$document = Invoke-RestMethod -UseBasicParsing -Headers $headers -Uri "$Registry/$([Uri]::EscapeDataString($PackageName))?cache=$cacheKey"
 $latest = [string]$document.'dist-tags'.latest
 if (-not $latest -or -not $document.versions.$latest) { throw "npm metadata has no latest release for $PackageName." }
 $engine = [string]$document.versions.$latest.engines.node

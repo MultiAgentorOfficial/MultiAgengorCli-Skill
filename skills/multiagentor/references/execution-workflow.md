@@ -11,7 +11,7 @@ Use operation names, arguments, JSON fields, and states discovered from the pinn
 
 ## 2. Authenticate
 
-Use the discovered read-only authentication status operation. Login only when required and follow [authentication.md](authentication.md). MultiAgentor credentials belong only in the local secure input window. Website credentials and verification belong only in the visible persistent MultiAgentBrowser.
+Use the discovered read-only authentication status operation. Login only when required and follow [authentication.md](authentication.md). Complete MultiAgentor authorization through the CLI OAuth device flow in the user's default browser. Website credentials and verification belong only in the visible persistent MultiAgentBrowser.
 
 After login, re-read status and record the non-sensitive account identity and API base. Never expose the returned token.
 

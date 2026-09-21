@@ -27,7 +27,8 @@ fi
 mkdir -p "$install_root"
 work="$(mktemp -d "$install_root/.bootstrap.XXXXXX")"
 trap 'rm -rf "$work"' EXIT
-curl -fsSL --retry 3 -H 'User-Agent: multiagentor-skill-bootstrap' -o "$work/latest.json" "$registry/$package_name/latest"
+cache_key="$(date +%s)"
+curl -fsSL --retry 3 -H 'User-Agent: multiagentor-skill-bootstrap' -H 'Cache-Control: no-cache, no-store' -H 'Pragma: no-cache' -o "$work/latest.json" "$registry/$package_name/latest?cache=$cache_key"
 latest="$(tr -d '\n' < "$work/latest.json" | sed -nE 's/.*"version":"([^"]+)".*/\1/p')"
 engine="$(tr -d '\n' < "$work/latest.json" | sed -nE 's/.*"engines":\{"node":"([^"]+)"\}.*/\1/p')"
 integrity="$(tr -d '\n' < "$work/latest.json" | sed -nE 's/.*"integrity":"([^"]+)".*/\1/p')"

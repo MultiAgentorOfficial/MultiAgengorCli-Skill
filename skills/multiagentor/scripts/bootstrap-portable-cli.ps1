@@ -23,7 +23,9 @@ $launcher = Join-Path $InstallRoot 'multiagentor.cmd'
 function Emit([hashtable]$Values) { $Values | ConvertTo-Json -Compress -Depth 6 }
 function Download([string]$Uri, [string]$OutFile) { Invoke-WebRequest -UseBasicParsing -Headers @{ 'User-Agent' = 'multiagentor-skill-bootstrap' } -Uri $Uri -OutFile $OutFile }
 function Get-Metadata {
-    $document = Invoke-RestMethod -UseBasicParsing -Headers @{ 'User-Agent' = 'multiagentor-skill-bootstrap' } -Uri "$Registry/$([Uri]::EscapeDataString($PackageName))"
+    $cacheKey = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
+    $headers = @{ 'User-Agent' = 'multiagentor-skill-bootstrap'; 'Cache-Control' = 'no-cache, no-store'; 'Pragma' = 'no-cache' }
+    $document = Invoke-RestMethod -UseBasicParsing -Headers $headers -Uri "$Registry/$([Uri]::EscapeDataString($PackageName))?cache=$cacheKey"
     $latest = [string]$document.'dist-tags'.latest
     $release = if ($latest) { $document.versions.$latest } else { $null }
     if (-not $release) { throw "npm metadata has no latest release for $PackageName." }

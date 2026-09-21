@@ -22,7 +22,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/update-cli.ps1
 bash scripts/update-cli.sh
 ```
 
-The updater reads `dist-tags.latest`, `engines.node`, and `dist.integrity` for `multiagentor-scenario-cli` from the npm registry. It compares the live CLI version with the npm latest version and invokes the portable bootstrap when the CLI is missing, broken, or outdated. Parse its JSON and pin the returned `invocation` for the workflow. Use `-CheckOnly` or `--check-only` for a read-only check.
+The updater reads `dist-tags.latest`, `engines.node`, and `dist.integrity` for `multiagentor-scenario-cli` from the npm registry. Requests bypass stale intermediary metadata caches so a newly published release is visible. It compares the live CLI version with the npm latest version and invokes the portable bootstrap when the CLI is missing, broken, or outdated. Parse its JSON and pin the returned `invocation` for the workflow. Use `-CheckOnly` or `--check-only` for a read-only check.
 
 ## 3. Inspect the environment
 

@@ -2,7 +2,7 @@
 name: multiagentor
 description: Dynamically discover, install, operate, and troubleshoot MultiAgentor Scenario CLI capabilities. Use for service accounts, scenarios, persistent browser identities, tasks, supervised browser runs, evidence, and workspace operations as the CLI and service API evolve.
 metadata:
-  version: "1.5.2"
+  version: "1.6.0"
 ---
 
 # MultiAgentor
@@ -61,7 +61,7 @@ After dynamic discovery, read only the references needed for the request:
 - Keep the `task run` process open. Send one complete JSON request per line to its stdin and wait for the matching response before the next dependent action.
 - After any action that may change the page, request a fresh snapshot before selecting another element. Use only refs from the newest snapshot.
 - An action response with `ok: true` proves only that the browser action ran. Decide success from the downloaded scenario's stated outcome and the observed page.
-- Read [authentication.md](references/authentication.md) before login. Use the local secure window for MultiAgentor credentials; use a visible persistent MultiAgentBrowser for website credentials and verification. Resume browser work with a fresh snapshot.
+- Read [authentication.md](references/authentication.md) before login. Use the visible OAuth device flow for the MultiAgentor account; use a visible persistent MultiAgentBrowser for website credentials and verification. Resume browser work with a fresh snapshot.
 - End every started task with the terminal action and statuses advertised by the active protocol. If the owner process is unavailable, use the discovered cancellation and inspection operations until terminal.
 - One Browser Profile can belong to only one active run. Different profiles may run in parallel.
 - Do not reveal login passwords, tokens, Cookie values, proxy credentials, fingerprints, authorization headers, or typed secrets in responses, generated logs, parameters, or commits. Treat browser bundles and screenshots as sensitive files.

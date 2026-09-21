@@ -19,36 +19,33 @@ printf 'ready\n' > "$session_directory/ready"
 chmod 600 "$session_directory/ready"
 
 if [[ $probe -eq 1 ]]; then
-  printf 'MultiAgentor login window probe is ready.\n'
+  printf 'MultiAgentor OAuth window probe is ready.\n'
   sleep 2
   exit 0
 fi
 
 authenticated=false
 message=""
-help_text="$($cli_path auth login --help 2>&1 || true)"
-if ! grep -Eq '(^|[[:space:]])--password-stdin([[:space:]]|$)' <<<"$help_text"; then
-  message='This CLI version does not support auth login --password-stdin. Update the npm package before secure login. Password arguments are disabled by this Skill.'
-  printf 'Login failed: %s\n' "$message" >&2
+help_text="$($cli_path --help 2>&1 || true)"
+if ! grep -Eq '^[[:space:]]*auth oauth([[:space:]]|$)' <<<"$help_text"; then
+  message='This CLI version does not support auth oauth. Update multiagentor-scenario-cli from npm.'
+  printf 'OAuth login failed: %s\n' "$message" >&2
 else
-  read -r -p 'MultiAgentor email: ' email
-  read -r -s -p 'MultiAgentor password: ' password
-  printf '\n'
-  if printf '%s\n' "$password" | "$cli_path" auth login --email "$email" --password-stdin; then
-    unset password
+  printf 'Opening the MultiAgentor authorization page in your default browser...\n'
+  printf 'Complete sign-in and authorization in the browser. This window will wait for the result.\n'
+  if "$cli_path" auth oauth; then
     status_text="$($cli_path auth status 2>&1 || true)"
     if grep -Eq '"authenticated"[[:space:]]*:[[:space:]]*true' <<<"$status_text"; then
       authenticated=true
-      message='Authenticated successfully.'
+      message='OAuth authentication completed successfully.'
       printf '%s\n' "$message"
     else
       message='Login command returned, but auth status did not report authenticated: true.'
-      printf 'Login failed: %s\n' "$message" >&2
+      printf 'OAuth login failed: %s\n' "$message" >&2
     fi
   else
-    unset password
-    message='CLI login command failed.'
-    printf 'Login failed: %s\n' "$message" >&2
+    message='CLI OAuth command failed or authorization expired.'
+    printf 'OAuth login failed: %s\n' "$message" >&2
   fi
 fi
 

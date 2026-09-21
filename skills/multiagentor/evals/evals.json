@@ -14,7 +14,7 @@
     },
     {
       "id": "cli-version-npm-latest",
-      "prompt": "当前 CLI 显示 0.1.0，仓库也还是 0.1.0，确认它是不是最新。",
+      "prompt": "当前 CLI 显示的版本可能是 npm 缓存，确认它是不是最新。",
       "expected_output": "同时比较运行中 CLI 版本、已安装 npm package version 与 npm dist-tags.latest，并读取当前 npm 包的 engines.node 和 integrity。确认一致后固定当前启动器；发现 npm 新版时在没有活动 Run 的前提下更新。"
     },
     {
@@ -74,13 +74,13 @@
     },
     {
       "id": "windows-secure-auth-window",
-      "prompt": "Windows 上弹出登录窗口让我输入 MultiAgentor 账号，项目路径里有空格。",
-      "expected_output": "先检查 auth status 和 auth login --help。只有 CLI 支持 password-stdin、交互安全输入、OAuth 或设备码时才启动登录。使用 start-auth-login.ps1，通过 Start-Process、WindowStyle Normal、NoExit 和 EncodedCommand 启动，等待不含敏感信息的 ready 标记最多 15 秒。窗口显示结果并等待回车；失败时报告 open-login.cmd 回退路径。最后再次执行 auth status，只有 authenticated:true 才成功。"
+      "prompt": "Windows 上弹出 MultiAgentor OAuth 登录，项目路径里有空格。",
+      "expected_output": "先检查 auth status 和实时帮助中的 auth oauth。使用 start-auth-login.ps1，通过 Start-Process、WindowStyle Normal、NoExit 和 EncodedCommand 启动可见 OAuth 终端，等待不含敏感信息的 ready 标记最多 15 秒。CLI 打开默认浏览器的 MultiAgentor 授权页并轮询设备授权；用户在浏览器内完成，Agent 不输入凭据或验证码。窗口显示结果并等待回车；失败时报告 open-login.cmd 回退路径。最后再次执行 auth status，只有 authenticated:true 才成功。"
     },
     {
       "id": "macos-secure-auth-window",
       "prompt": "在 macOS 上打开 MultiAgentor 登录窗口，不能泄漏密码。",
-      "expected_output": "使用 start-auth-login.sh 生成权限 700 的 login.command 并通过 open -a Terminal 打开。子进程使用隐藏输入和安全 CLI 登录能力，写入 ready 标记、显示结果并等待回车。禁止使用 --password 参数或临时凭据文件；最后由 Agent 再次执行 auth status 验证 authenticated:true。"
+      "expected_output": "使用 start-auth-login.sh 生成权限 700 的 login.command 并通过 open -a Terminal 打开。子进程写入 ready 标记并执行 auth oauth，CLI 打开默认浏览器的授权页并等待用户完成；终端显示结果并等待回车。禁止请求或传递密码、Token 和验证码；最后由 Agent 再次执行 auth status 验证 authenticated:true。"
     },
     {
       "id": "twitter-login-visible-browser",

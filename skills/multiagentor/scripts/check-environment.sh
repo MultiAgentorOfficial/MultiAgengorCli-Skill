@@ -40,7 +40,8 @@ fi
 latest=""; engine=""; integrity=""
 if [[ $check_remote -eq 1 ]]; then
   work="$(mktemp)"; trap 'rm -f "$work"' EXIT
-  curl -fsSL --retry 3 -o "$work" "$registry/$package_name/latest"
+  cache_key="$(date +%s)"
+  curl -fsSL --retry 3 -H 'Cache-Control: no-cache, no-store' -H 'Pragma: no-cache' -o "$work" "$registry/$package_name/latest?cache=$cache_key"
   latest="$(tr -d '\n' < "$work" | sed -nE 's/.*"version":"([^"]+)".*/\1/p')"
   engine="$(tr -d '\n' < "$work" | sed -nE 's/.*"engines":\{"node":"([^"]+)"\}.*/\1/p')"
   integrity="$(tr -d '\n' < "$work" | sed -nE 's/.*"integrity":"([^"]+)".*/\1/p')"

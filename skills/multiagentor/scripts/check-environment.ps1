@@ -21,6 +21,16 @@ if (-not $resolvedCli -and $env:MULTIAGENTOR_CLI_PATH) { $resolvedCli = $env:MUL
 if (-not $resolvedCli) { $resolvedCli = Command-Path 'multiagentor' }
 $cliVersion = if ($resolvedCli) { Capture { & $resolvedCli --version } } else { $null }
 $cliHelp = if ($resolvedCli) { [bool](Capture { & $resolvedCli --help }) } else { $false }
+$systemVersion = [Environment]::OSVersion.Version.ToString()
+$chromePath = @(
+    (Join-Path $env:ProgramFiles 'Google\Chrome\Application\chrome.exe'),
+    $(if (${env:ProgramFiles(x86)}) { Join-Path ${env:ProgramFiles(x86)} 'Google\Chrome\Application\chrome.exe' }),
+    $(if ($env:LOCALAPPDATA) { Join-Path $env:LOCALAPPDATA 'Google\Chrome\Application\chrome.exe' })
+) | Where-Object { $_ -and (Test-Path -LiteralPath $_ -PathType Leaf) } | Select-Object -First 1
+$chromeVersion = if ($chromePath) { (Get-Item -LiteralPath $chromePath).VersionInfo.ProductVersion } else { $null }
+$chromeMajor = if ($chromeVersion -match '^(\d+)') { [int]$Matches[1] } else { $null }
+$managedBrowserVersion = if ($env:MULTIAGENTOR_BROWSER_EXECUTABLE -and (Test-Path -LiteralPath $env:MULTIAGENTOR_BROWSER_EXECUTABLE -PathType Leaf)) { (Get-Item -LiteralPath $env:MULTIAGENTOR_BROWSER_EXECUTABLE).VersionInfo.ProductVersion } else { $null }
+$managedBrowserMajor = if ($managedBrowserVersion -match '^(\d+)') { [int]$Matches[1] } else { $null }
 
 $latest = $null; $nodeEngine = $null; $integrity = $null
 if ($CheckRemote) {
@@ -36,6 +46,12 @@ $match = [regex]::Match($skillText, '(?m)^\s{2}version:\s*["'']?([^"''\r\n]+)')
     skillRoot = $skillRoot
     os = [System.Runtime.InteropServices.RuntimeInformation]::OSDescription
     architecture = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString()
+    systemVersion = $systemVersion
+    chromePath = $chromePath
+    chromeVersion = $chromeVersion
+    chromeMajor = $chromeMajor
+    managedBrowserVersion = $managedBrowserVersion
+    managedBrowserMajor = $managedBrowserMajor
     nodePath = $nodePath
     nodeVersion = $nodeVersion
     npmPath = $npmPath

@@ -2,7 +2,7 @@
 name: multiagentor
 description: Dynamically discover, install, operate, and troubleshoot MultiAgentor Scenario CLI capabilities. Use for service accounts, scenarios, persistent browser identities, tasks, supervised browser runs, evidence, and workspace operations as the CLI and service API evolve.
 metadata:
-  version: "1.5.0"
+  version: "1.5.1"
 ---
 
 # MultiAgentor

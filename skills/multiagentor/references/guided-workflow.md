@@ -17,11 +17,16 @@ Report a blocking installation or authentication problem immediately. Otherwise 
 
 When more than one usable CLI environment exists, ask the user which to use:
 
-1. detected global npm installation;
-2. managed portable npm installation;
-3. a launcher path supplied by the user.
+1. **全局 npm 安装** — 使用系统 Node/npm 和 PATH 中的 CLI，适合已经统一配置开发环境的机器。
+2. **受管独立安装** — 使用 Skill 管理的独立 Node 和 CLI，不修改系统 PATH，适合隔离环境或没有 Node 的机器。
+3. **指定启动器路径** — 使用用户提供的 CLI 文件，适合已有自定义安装；后续全程固定该路径。
 
-Also show the effective data directory and API base. Ask whether to keep them or use user-supplied values before creating resources. Once selected, pin them for the entire workflow.
+Also show the effective data directory and API base. Ask whether to keep them or use user-supplied values before creating resources:
+
+1. **使用当前数据目录/API** — 继续使用现有登录、浏览器身份、任务和历史记录。
+2. **指定数据目录/API** — 使用另一套隔离数据或服务地址；该选择会改变可见的账号和资源。
+
+Once selected, pin them for the entire workflow.
 
 ## 2. MultiAgentor authentication gate
 
@@ -43,10 +48,10 @@ Do not offer scenario import: the current CLI has search/get/list but no scenari
 Ask this for every new task/run, after listing current browser identities:
 
 > 这次任务使用哪种浏览器身份？
-> 1. 复用已有身份
-> 2. 新建养号身份
-> 3. 导入完整浏览器身份包
-> 4. 向已有身份导入 Cookie
+> 1. **复用已有身份** — 继续使用已有指纹、代理、Profile 和登录状态，不创建新环境。
+> 2. **新建养号身份** — 创建全新的独立 Profile；需要选择系统指纹、Chrome 版本和代理。
+> 3. **导入完整浏览器身份包** — 从 MultiAgentor 导出文件创建一个新身份，同时带入环境配置和 Cookies。
+> 4. **向已有身份导入 Cookie** — 只给现有身份补充或替换 Cookies，不改变指纹、代理和环境。
 
 Include actual existing browser names and IDs beneath option 1. If an option is unavailable, state why instead of silently selecting another.
 
@@ -68,7 +73,38 @@ Query live help and any read-only service metadata for supported values. Then as
 - proxy host and port;
 - whether the proxy requires authentication.
 
+Annotate each presented choice:
+
+- **Windows** — 创建 Windows 浏览器指纹，适合目标账号原本或计划在 Windows 环境使用。
+- **macOS** — 创建 macOS 浏览器指纹，适合目标账号原本或计划在 Mac 环境使用。
+- **现在配置代理** — 创建时直接绑定代理，首次网站访问即使用该出口。
+- **稍后配置代理** — 先创建身份，再通过 `browser proxy` 设置；配置前不要登录目标网站。
+- **不使用代理** — 使用当前机器网络出口，后续可再修改。
+- **HTTP** — 使用普通 HTTP 代理协议，仅在代理服务明确要求时选择。
+- **HTTPS** — 使用 HTTPS 代理协议，仅在代理服务明确提供该协议时选择。
+- **SOCKS5** — 使用 SOCKS5 代理，适合明确提供 SOCKS5 地址的服务。
+- **代理无需认证** — 只需要主机和端口。
+- **代理需要认证** — 还需要用户名和密码；当前 CLI 没有安全密码输入时，改用已含代理的身份包。
+
 Present detected host values only as labeled recommendations. The user must select the values used to create the identity. Do not invent a system version or Chrome major that the live CLI/service has not accepted or advertised.
+
+For the first three environment choices, recommend a default whenever it can be detected and confirmed as supported:
+
+1. **Windows 或 macOS** — recommend the current host OS (`Windows` on Windows, `macOS` on Mac) because it matches the machine running MultiAgentBrowser. Still show the other supported choice.
+2. **系统版本** — recommend the detected host system version when the live CLI/service accepts it. Explain that choosing another version changes the browser fingerprint presented to websites.
+3. **Chrome 主版本** — recommend the detected installed Chrome or MultiAgentBrowser major version when supported. Explain that it controls the browser-version fingerprint, not which ordinary Chrome application is launched.
+
+Display defaults like this:
+
+```text
+1. Windows（推荐：与当前运行设备一致）— 使用 Windows 浏览器指纹。
+2. macOS — 使用 macOS 浏览器指纹，适合明确需要 Mac 环境的账号。
+
+系统版本默认：<detected-version>（推荐：当前设备版本且已确认受支持）
+Chrome 主版本默认：<detected-major>（推荐：当前可用浏览器主版本且已确认受支持）
+```
+
+If detection fails or support cannot be confirmed, say “未检测到可靠默认值” and present only verified supported values. Never label an inferred, stale, or unverified value as recommended.
 
 Do not request proxy passwords in chat. If the CLI only accepts proxy secrets as process arguments, explain the limitation and ask the user to use an imported identity that already contains the proxy, or wait for a secure CLI input mode.
 
@@ -90,8 +126,8 @@ For the current CLI, a version 1 `multiagentor-browser` bundle carries the ident
 
 Ask for an existing browser ID, local Cookie JSON path, and mode:
 
-- `merge`: preserve existing Cookies and merge imported entries;
-- `replace`: replace existing Cookies and therefore requires explicit confirmation.
+- **`merge`（推荐）** — 保留现有 Cookies，并用导入文件增加或更新同名项；适合补充登录状态。
+- **`replace`** — 删除现有 Cookies 后使用导入文件；可能让其他网站退出登录，必须明确确认。
 
 Run the discovered `browser cookie-import` operation and report only the imported count, mode, and browser ID. Do not display Cookie values.
 
@@ -101,6 +137,12 @@ Explain that Cookie import changes only the selected identity's Cookies. It does
 
 Ask whether the chosen identity is already logged in to the target website.
 
+Show these annotated choices:
+
+1. **已登录，直接继续** — 保留当前 Profile 状态；运行前仍会标记登录状态为用户确认。
+2. **现在打开可见浏览器登录/养号** — 打开持久化 MultiAgentBrowser，由用户完成密码、验证码、CAPTCHA 和必要的人工操作。
+3. **暂时跳过登录** — 不打开手动浏览器；登录状态记为不确定，正式运行时建议选择可见模式。
+
 - If no or uncertain, launch the persistent browser visibly without `--headless` and let the user complete login, verification, CAPTCHA, consent, and any warm-up actions.
 - Keep the Agent waiting while the manual browser is open.
 - After the user closes it, verify that the Profile is released before continuing.
@@ -109,7 +151,12 @@ For X/Twitter and other website accounts, the Agent never enters passwords, one-
 
 ## 6. Task choice and parameters
 
-List tasks bound to the selected scenario/browser. Ask whether to reuse a matching task or create a new one. When creating, ask the user to choose the task name and every parameter required by the downloaded scenario manifest. For optional parameters, show the supported choices/defaults and ask which to use; do not silently populate business values. Write non-secret parameters to a restricted temporary JSON file for `--params-file`; never put secrets in it.
+List tasks bound to the selected scenario/browser. Ask:
+
+1. **复用匹配任务** — 使用已有任务 ID 和原配置，适合重复执行同一场景；运行前展示当前参数。
+2. **新建任务** — 创建独立任务并重新选择名称和参数，适合不同账号、目标或配置。
+
+When creating, ask the user to choose the task name and every parameter required by the downloaded scenario manifest. For optional parameters, show each supported choice/default together with its meaning and effect; do not silently populate business values. Write non-secret parameters to a restricted temporary JSON file for `--params-file`; never put secrets in it.
 
 Inspect the final task and show its task ID, scenario ID/version, browser ID, and non-sensitive parameters.
 
@@ -127,7 +174,16 @@ Before `task run`, present one compact summary and ask the user to confirm:
 
 If login is uncertain, recommend visible mode. Do not start on an ambiguous “use whatever is available” assumption.
 
-The user must explicitly select visible or headless mode for this run. Do not inherit the choice from an earlier run.
+The user must explicitly select one annotated mode for this run. Do not inherit the choice from an earlier run:
+
+1. **可见模式（登录不确定时推荐）** — 显示 MultiAgentBrowser，用户可以观察流程并处理登录或验证。
+2. **Headless 模式** — 后台运行、不显示浏览器；只适合登录状态明确且场景无需人工介入。
+
+For the final action, show:
+
+1. **确认并运行** — 使用上方汇总配置启动前台监督任务。
+2. **返回修改** — 不启动任务，回到用户指定的选择步骤。
+3. **取消** — 不创建新的运行；保留此前已明确创建或导入的资源。
 
 ## 8. Run and finish
 
@@ -136,7 +192,8 @@ Start the foreground run only after confirmation. Follow [supervised-execution.m
 ## Question style
 
 - Ask one decision at a time unless several short fields belong to the same selected branch.
-- Use numbered options and include a recommended option only when supported by discovered state.
+- Use numbered options. Every option must include a short user-facing annotation explaining what it does, when to use it, and its material effect. Never display bare option names.
+- Include a recommended label only when supported by discovered state, and explain the reason in the same line.
 - Show human-readable names together with IDs.
 - Never ask the user to paste passwords, tokens, Cookie values, proxy credentials, verification codes, or recovery codes.
 - Re-run read-only lists when the user waits long enough that state may have changed.
@@ -158,3 +215,11 @@ Use live help as the authority, but for CLI `0.1.0` the guided choices map to th
 | Run task | `task run`; user selects visible or headless and confirms the resolved summary |
 
 Do not offer fields absent from the live CLI. When a later CLI adds fields, discover them and add them to the user choices for that run.
+
+For dynamic lists, annotate them too. Format scenario, browser, and task choices as:
+
+```text
+1. <name> (<id>) — <what it is for>; <relevant status or effect>
+```
+
+Examples of relevant annotations include scenario purpose/version, browser OS/Chrome/proxy/busy status, and task scenario/browser binding. Do not expose secret values.

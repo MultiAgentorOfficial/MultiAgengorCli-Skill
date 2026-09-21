@@ -90,7 +90,7 @@
     {
       "id": "guided-new-profile-and-proxy",
       "prompt": "给我新建一个养号环境并运行合适的脚本。",
-      "expected_output": "先完成环境、版本、auth status 和只读资源列表，再搜索场景。向用户逐项提供当前 CLI 支持的真实选择：身份来源、名称、windows/macos、系统版本、Chrome 主版本、现在配置代理/稍后配置/无代理、HTTP/HTTPS/SOCKS5、主机端口及是否认证。对 OS、系统版本和 Chrome 主版本，在检测值已确认受支持时标注推荐默认并解释原因；无法可靠检测时明确没有默认值，不能编造。不得在聊天中询问代理密码。随后询问可见浏览器登录、任务复用/新建、场景参数、可见/headless，并在汇总后获得运行确认。"
+      "expected_output": "先完成环境、版本、auth status 和只读资源列表，再搜索场景。新建身份时只让用户填写必填的浏览器名称和可选的代理信息；用户跳过代理时不传入任何 proxy 参数。不询问 OS、系统版本、内核品牌或 Chrome 主版本；从当前主机和 MultiAgentBrowser/已安装 Chrome 自动检测并填入。如果检测失败或服务不接受，报告具体字段并停止创建，不编造值。不得在聊天中询问代理密码。随后询问可见浏览器登录、任务复用/新建、场景参数、可见/headless，并在汇总后获得运行确认。"
     },
     {
       "id": "guided-import-before-run",

@@ -49,7 +49,7 @@ Ask this for every new task/run, after listing current browser identities:
 
 > 这次任务使用哪种浏览器身份？
 > 1. **复用已有身份** — 继续使用已有指纹、代理、Profile 和登录状态，不创建新环境。
-> 2. **新建养号身份** — 创建全新的独立 Profile；需要选择系统指纹、Chrome 版本和代理。
+> 2. **新建养号身份** — 创建全新的独立 Profile；系统和浏览器指纹由 Skill 自动检测，用户只需填写名称，代理信息可选。
 > 3. **导入完整浏览器身份包** — 从 MultiAgentor 导出文件创建一个新身份，同时带入环境配置和 Cookies。
 > 4. **向已有身份导入 Cookie** — 只给现有身份补充或替换 Cookies，不改变指纹、代理和环境。
 
@@ -61,50 +61,36 @@ Ask the user to select an actual ID. Inspect it and show name, OS/browser finger
 
 ### Create a new identity
 
-Query live help and any read-only service metadata for supported values. Then ask the user to choose every creation field supported by the current CLI; do not silently infer or randomize them:
+Query live help and any read-only service metadata for supported values. Ask for only:
 
-- identity name;
-- system OS: `windows` or `macos`;
-- system version;
-- kernel brand when the CLI offers more than its current `chrome` default;
-- Chrome major version;
-- proxy timing: configure now, configure later, or no proxy;
-- proxy protocol: HTTP, HTTPS, or SOCKS5;
-- proxy host and port;
-- whether the proxy requires authentication.
+- **浏览器名称（必填）** — 用于在身份列表中识别该 Profile。
+- **代理信息（可选）** — 用户可跳过；只有用户选择配置时，再询问协议、主机、端口和是否需要认证。
 
-Annotate each presented choice:
+Resolve the environment fingerprint without asking the user:
 
-- **Windows** — 创建 Windows 浏览器指纹，适合目标账号原本或计划在 Windows 环境使用。
-- **macOS** — 创建 macOS 浏览器指纹，适合目标账号原本或计划在 Mac 环境使用。
-- **现在配置代理** — 创建时直接绑定代理，首次网站访问即使用该出口。
-- **稍后配置代理** — 先创建身份，再通过 `browser proxy` 设置；配置前不要登录目标网站。
-- **不使用代理** — 使用当前机器网络出口，后续可再修改。
+1. Set `--system-os` from the current host: `windows` on Windows or `macos` on macOS.
+2. Set `--system-version` from the host version returned by the environment check.
+3. Set `--kernel-brand chrome` unless live CLI help advertises a different required fixed value.
+4. Set `--kernel-version` to the detected MultiAgentBrowser major when available; otherwise use the detected installed Google Chrome major.
+5. Confirm that each resolved value satisfies the live CLI and service contract before creating the identity. If detection fails or the service rejects a value, report the exact missing or rejected field and stop identity creation. Do not turn these fields into user choices and do not invent a fallback value.
+
+Show the resolved non-sensitive values for transparency, but do not ask for confirmation of each field. Build the command in this form:
+
+```text
+browser create --name <user-name> --system-os <detected-os> --system-version <detected-version> --kernel-brand <detected-or-cli-default-brand> --kernel-version <detected-major>
+```
+
+When the user skips proxy configuration, append no `--proxy-*` options. When the user supplies a proxy, append `--proxy-protocol`, `--proxy-host`, and `--proxy-port`; add authentication only through a secure input mechanism supported by the live CLI.
+
+If the user wants a proxy, annotate each presented choice:
+
+- **跳过代理** — 不传入任何代理参数，使用当前机器网络出口；后续仍可通过 `browser proxy` 配置。
+- **配置代理** — 创建时绑定用户提供的代理，首次网站访问即使用该出口。
 - **HTTP** — 使用普通 HTTP 代理协议，仅在代理服务明确要求时选择。
 - **HTTPS** — 使用 HTTPS 代理协议，仅在代理服务明确提供该协议时选择。
 - **SOCKS5** — 使用 SOCKS5 代理，适合明确提供 SOCKS5 地址的服务。
 - **代理无需认证** — 只需要主机和端口。
 - **代理需要认证** — 还需要用户名和密码；当前 CLI 没有安全密码输入时，改用已含代理的身份包。
-
-Present detected host values only as labeled recommendations. The user must select the values used to create the identity. Do not invent a system version or Chrome major that the live CLI/service has not accepted or advertised.
-
-For the first three environment choices, recommend a default whenever it can be detected and confirmed as supported:
-
-1. **Windows 或 macOS** — recommend the current host OS (`Windows` on Windows, `macOS` on Mac) because it matches the machine running MultiAgentBrowser. Still show the other supported choice.
-2. **系统版本** — recommend the detected host system version when the live CLI/service accepts it. Explain that choosing another version changes the browser fingerprint presented to websites.
-3. **Chrome 主版本** — recommend the detected installed Chrome or MultiAgentBrowser major version when supported. Explain that it controls the browser-version fingerprint, not which ordinary Chrome application is launched.
-
-Display defaults like this:
-
-```text
-1. Windows（推荐：与当前运行设备一致）— 使用 Windows 浏览器指纹。
-2. macOS — 使用 macOS 浏览器指纹，适合明确需要 Mac 环境的账号。
-
-系统版本默认：<detected-version>（推荐：当前设备版本且已确认受支持）
-Chrome 主版本默认：<detected-major>（推荐：当前可用浏览器主版本且已确认受支持）
-```
-
-If detection fails or support cannot be confirmed, say “未检测到可靠默认值” and present only verified supported values. Never label an inferred, stale, or unverified value as recommended.
 
 Do not request proxy passwords in chat. If the CLI only accepts proxy secrets as process arguments, explain the limitation and ask the user to use an imported identity that already contains the proxy, or wait for a secure CLI input mode.
 
@@ -205,7 +191,7 @@ Use live help as the authority, but for CLI `0.1.0` the guided choices map to th
 | User decision | Current operation and required choices |
 | --- | --- |
 | Reuse identity | `browser list`, user selects ID, then `browser inspect` |
-| Create identity | `browser create`; user selects name, OS, system version, Chrome major, and proxy configuration |
+| Create identity | `browser create`; user enters a required name and may skip or provide proxy information; Skill auto-detects host OS, host version, kernel brand, and browser major |
 | Import identity | `browser import`; user selects bundle path and optional new name |
 | Import Cookies | `browser cookie-import`; user selects browser ID, Cookie file, and `merge` or `replace` |
 | Configure proxy later | `browser proxy`; user selects remove or full protocol/host/port configuration |
@@ -215,6 +201,20 @@ Use live help as the authority, but for CLI `0.1.0` the guided choices map to th
 | Run task | `task run`; user selects visible or headless and confirms the resolved summary |
 
 Do not offer fields absent from the live CLI. When a later CLI adds fields, discover them and add them to the user choices for that run.
+
+For CLI `0.1.0`, `browser create` has this effective parameter contract:
+
+| Parameter | CLI behavior | Skill source |
+| --- | --- | --- |
+| `--name` | Required; no CLI default | User enters it |
+| `--system-os` | Required; no CLI default | Auto-detect current host as `windows` or `macos` |
+| `--system-version` | Required; no CLI default | Auto-detect current host version |
+| `--kernel-brand` | Optional; CLI defaults to `chrome` | Use live CLI default |
+| `--kernel-version` | Required; no CLI default | Auto-detect MultiAgentBrowser major, then installed Chrome major |
+| `--proxy-protocol`, `--proxy-host`, `--proxy-port` | Optional as a group; omitting every proxy option means no proxy | Ask only when the user chooses to configure a proxy |
+| `--proxy-username`, `--proxy-password` | Optional authentication fields | Use only when the live CLI provides a secure secret input path |
+
+Rebuild this table from live help and installed validation code when the CLI version changes.
 
 For dynamic lists, annotate them too. Format scenario, browser, and task choices as:
 

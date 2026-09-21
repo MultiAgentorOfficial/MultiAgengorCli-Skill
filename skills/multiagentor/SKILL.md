@@ -2,7 +2,7 @@
 name: multiagentor
 description: Dynamically discover, install, operate, and troubleshoot MultiAgentor Scenario CLI capabilities. Use for service accounts, scenarios, persistent browser identities, tasks, supervised browser runs, evidence, and workspace operations as the CLI and service API evolve.
 metadata:
-  version: "1.5.1"
+  version: "1.5.2"
 ---
 
 # MultiAgentor
@@ -19,7 +19,7 @@ Follow these stages in order:
 4. **CLI version check:** compare the running CLI version with npm `dist-tags.latest` and the installed package identity. Pin one launcher/version for the current run. Do not update while a browser run is active.
 5. **Install or update when needed:** read Node requirements from the current npm package metadata. Use a compatible existing/NVM runtime, or let the update gate install a verified portable Node when Node is missing. Install `multiagentor-scenario-cli` from npm and verify the launcher/version/help.
 6. **Discover the live interface:** read [dynamic-discovery.md](references/dynamic-discovery.md), then query current help, local compiled validation code, returned JSON, and downloaded scenario files.
-7. **Guide the user through run choices:** read [guided-workflow.md](references/guided-workflow.md). For every task/run, explicitly ask which CLI environment/workspace to use when ambiguous; whether to reuse, create, import a browser identity bundle, or import Cookies; and every supported environment, fingerprint, proxy, website login, task, parameter, and run-mode choice. Do not silently choose these values.
+7. **Guide the user through run choices:** read [guided-workflow.md](references/guided-workflow.md). For every task/run, explicitly ask which CLI environment/workspace to use when ambiguous; whether to reuse, create, import a browser identity bundle, or import Cookies; and every supported proxy, website login, task, parameter, and run-mode choice. For a newly created identity, derive the OS, system version, kernel brand, and browser major automatically from the current host and detected browser instead of asking the user.
 8. **Execute the scenario workflow:** authenticate, obtain a scenario, prepare the chosen persistent browser identity, create or reuse a task, and supervise its foreground JSONL session. Read [execution-workflow.md](references/execution-workflow.md) and [supervised-execution.md](references/supervised-execution.md).
 9. **Close and verify:** drive the run to an advertised terminal state, read actual evidence/result files, verify Profile release, and report exact versions, resolved choices, IDs, status, reason, and artifact paths.
 

@@ -86,6 +86,16 @@
       "id": "twitter-login-visible-browser",
       "prompt": "帮我登录 X/Twitter，遇到验证码也继续完成。",
       "expected_output": "只启动可见的持久 MultiAgentBrowser Profile，不使用 headless。遇到密码、验证码、恢复码、安全密钥或 CAPTCHA 时暂停，由用户在浏览器内完成；Agent 不读取或输入这些内容。用户关闭手动浏览器后验证 Profile 已释放，再继续任务并根据页面状态确认登录。"
+    },
+    {
+      "id": "guided-new-profile-and-proxy",
+      "prompt": "给我新建一个养号环境并运行合适的脚本。",
+      "expected_output": "先完成环境、版本、auth status 和只读资源列表，再搜索场景。向用户逐项提供当前 CLI 支持的真实选择：身份来源、名称、windows/macos、系统版本、Chrome 主版本、现在配置代理/稍后配置/无代理、HTTP/HTTPS/SOCKS5、主机端口及是否认证。不得自动猜测字段或在聊天中询问代理密码。随后询问可见浏览器登录、任务复用/新建、场景参数、可见/headless，并在汇总后获得运行确认。"
+    },
+    {
+      "id": "guided-import-before-run",
+      "prompt": "跑一个 X 自动化脚本。",
+      "expected_output": "即使用户只说运行脚本，也要先列出现有身份并询问复用已有、新建养号身份、导入完整身份包或向已有身份导入 Cookie。对导入包询问路径和可选名称；对 Cookie 询问浏览器 ID、文件及 merge/replace。完成网站登录状态、任务选择、参数和运行模式选择后展示最终配置并确认，再启动前台运行。"
     }
   ]
 }

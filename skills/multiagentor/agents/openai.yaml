@@ -1,7 +1,7 @@
 interface:
   display_name: "MultiAgentor CLI"
-  short_description: "Operate supervised browser scenarios and profiles"
-  default_prompt: "Use $multiagentor to prepare and run an official browser scenario with a persistent profile."
+  short_description: "Guide setup, browser identity choices, and scenario runs"
+  default_prompt: "Use $multiagentor to check my setup, guide me through selecting or creating a browser identity, and run an official scenario."
 
 policy:
   allow_implicit_invocation: true

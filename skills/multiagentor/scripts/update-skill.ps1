@@ -21,7 +21,7 @@ function Read-SkillIdentity([string]$Path) {
 function Test-Integrity([string]$Root) {
     $required = @(
         'SKILL.md', 'agents\openai.yaml', 'references\installation.md',
-        'references\dynamic-discovery.md', 'references\execution-workflow.md', 'references\authentication.md',
+        'references\dynamic-discovery.md', 'references\execution-workflow.md', 'references\authentication.md', 'references\guided-workflow.md',
         'references\supervised-execution.md', 'references\troubleshooting.md',
         'scripts\update-skill.ps1', 'scripts\update-skill.sh',
         'scripts\update-cli.ps1', 'scripts\update-cli.sh',

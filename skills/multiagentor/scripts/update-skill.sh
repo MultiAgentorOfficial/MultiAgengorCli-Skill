@@ -19,7 +19,7 @@ valid_version() { [[ "$1" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$
 version_gt() { awk -v a="$1" -v b="$2" 'BEGIN{split(a,x,".");split(b,y,".");for(i=1;i<=3;i++){if(x[i]+0>y[i]+0)exit 0;if(x[i]+0<y[i]+0)exit 1}exit 1}'; }
 integrity() {
   local root="$1" f
-  for f in SKILL.md agents/openai.yaml references/installation.md references/dynamic-discovery.md references/execution-workflow.md references/supervised-execution.md references/troubleshooting.md scripts/update-skill.ps1 scripts/update-skill.sh scripts/update-cli.ps1 scripts/update-cli.sh scripts/bootstrap-portable-cli.ps1 scripts/bootstrap-portable-cli.sh scripts/check-environment.ps1 scripts/check-environment.sh; do
+  for f in SKILL.md agents/openai.yaml references/installation.md references/dynamic-discovery.md references/execution-workflow.md references/authentication.md references/supervised-execution.md references/troubleshooting.md scripts/update-skill.ps1 scripts/update-skill.sh scripts/update-cli.ps1 scripts/update-cli.sh scripts/start-auth-login.ps1 scripts/start-auth-login.sh scripts/auth-login-window.ps1 scripts/auth-login-window.sh scripts/bootstrap-portable-cli.ps1 scripts/bootstrap-portable-cli.sh scripts/check-environment.ps1 scripts/check-environment.sh; do
     [[ -f "$root/$f" ]] || return 1
   done
   grep -q '^name:[[:space:]]*multiagentor[[:space:]]*$' "$root/SKILL.md"

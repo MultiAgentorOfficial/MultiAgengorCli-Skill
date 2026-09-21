@@ -11,7 +11,7 @@ Use operation names, arguments, JSON fields, and states discovered from the pinn
 
 ## 2. Authenticate
 
-Use the discovered read-only authentication status operation. Login only when required. Keep passwords out of chat, responses, logs, generated parameter files, and shell history whenever the host permits secure input.
+Use the discovered read-only authentication status operation. Login only when required and follow [authentication.md](authentication.md). MultiAgentor credentials belong only in the local secure input window. Website credentials and verification belong only in the visible persistent MultiAgentBrowser.
 
 After login, re-read status and record the non-sensitive account identity and API base. Never expose the returned token.
 

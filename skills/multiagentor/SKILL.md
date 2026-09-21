@@ -2,7 +2,7 @@
 name: multiagentor
 description: Dynamically discover, install, operate, and troubleshoot MultiAgentor Scenario CLI capabilities. Use for service accounts, scenarios, persistent browser identities, tasks, supervised browser runs, evidence, and workspace operations as the CLI and service API evolve.
 metadata:
-  version: "1.3.0"
+  version: "1.4.0"
 ---
 
 # MultiAgentor
@@ -25,7 +25,7 @@ Follow these stages in order:
 ## Always discover the live interface
 
 1. Read [dynamic-discovery.md](references/dynamic-discovery.md) once after the environment and version checks.
-2. Resolve the launcher in this order: a path explicitly supplied by the user, `MULTIAGENTOR_CLI_PATH`, `multiagentor` on `PATH`, then a local CLI checkout.
+2. Resolve the launcher in this order: a path explicitly supplied by the user, `MULTIAGENTOR_CLI_PATH`, `multiagentor` on `PATH`, then the managed portable npm installation.
 3. Query the actual binary for its version and help. Build the working command and capability map from live output, the installed package, returned JSON, and downloaded scenario package.
 4. Use read-only discovery before asking for IDs or supported values. Preserve the same launcher, CLI version, data directory, and API base for the workflow.
 
@@ -38,6 +38,7 @@ After dynamic discovery, read only the references needed for the request:
 | Intent | Reference |
 | --- | --- |
 | Install, locate, update, or verify the CLI | [installation.md](references/installation.md) |
+| Authenticate MultiAgentor or a website account | [authentication.md](references/authentication.md) |
 | Full execution sequence and resource lifecycle | [execution-workflow.md](references/execution-workflow.md) |
 | Drive a foreground `task run` through JSONL | [supervised-execution.md](references/supervised-execution.md) |
 | Diagnose failures or migrate the workspace | [troubleshooting.md](references/troubleshooting.md) |
@@ -58,7 +59,7 @@ After dynamic discovery, read only the references needed for the request:
 - Keep the `task run` process open. Send one complete JSON request per line to its stdin and wait for the matching response before the next dependent action.
 - After any action that may change the page, request a fresh snapshot before selecting another element. Use only refs from the newest snapshot.
 - An action response with `ok: true` proves only that the browser action ran. Decide success from the downloaded scenario's stated outcome and the observed page.
-- Let the user handle credentials and site verification in the visible browser. Resume with a fresh snapshot.
+- Read [authentication.md](references/authentication.md) before login. Use the local secure window for MultiAgentor credentials; use a visible persistent MultiAgentBrowser for website credentials and verification. Resume browser work with a fresh snapshot.
 - End every started task with the terminal action and statuses advertised by the active protocol. If the owner process is unavailable, use the discovered cancellation and inspection operations until terminal.
 - One Browser Profile can belong to only one active run. Different profiles may run in parallel.
 - Do not reveal login passwords, tokens, Cookie values, proxy credentials, fingerprints, authorization headers, or typed secrets in responses, generated logs, parameters, or commits. Treat browser bundles and screenshots as sensitive files.

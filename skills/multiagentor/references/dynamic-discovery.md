@@ -37,7 +37,9 @@ The service API can evolve. Use the CLI as the compatibility boundary. Do not ca
 
 After obtaining a scenario, read every returned local path. Read its manifest and Agent instructions. Scenario metadata is dynamic: derive parameters, allowed behavior, success conditions, timeouts, and evidence expectations from the current package without assuming a fixed metadata schema.
 
-When a run starts, inspect its initial event and scenario path. Discover supported JSONL actions and parameter schemas from the running version's local package/compiled validation code and from protocol errors. Use only capabilities confirmed for this version and consistent with the scenario.
+For Codex's default worker mode, require isolated `spawn_agent` with `fork_turns="none"` and inspect help for `--worker-session`, `run step-start`, `run step-end`, `run observe`, `run act`, and `run finish`. Do not rely on version alone: published and unpublished builds may share a version. Missing support stops with an explicit error; never automatically fall back to legacy. CLI help cannot verify host child-history isolation.
+
+When a run starts, inspect its initial event and scenario path. Discover supported actions and parameter schemas from the pinned installed package and returned errors. Use only capabilities confirmed for this version and consistent with the scenario. Worker actions return completion plus latest observation; legacy JSONL requires separate snapshots. The no-subcommand local entrypoint remains legacy.
 
 ## 6. Re-discover on change
 

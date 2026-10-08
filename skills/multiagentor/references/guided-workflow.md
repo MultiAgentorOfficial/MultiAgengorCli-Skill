@@ -173,7 +173,7 @@ For the final action, show:
 
 ## 8. Run and finish
 
-Start the foreground run only after confirmation. Follow [supervised-execution.md](supervised-execution.md) to terminal state, inspect result/evidence files, verify Profile release, and report the resolved choices along with the outcome.
+Start the foreground run only after confirmation or existing explicit authorization of the resolved configuration. Codex defaults to [worker-execution.md](worker-execution.md); [supervised-execution.md](supervised-execution.md) is for explicitly chosen legacy JSONL. Inspect result/evidence files, verify Profile release, and report the resolved choices and outcome. Missing worker support is an error, not an automatic legacy selection.
 
 ## Question style
 

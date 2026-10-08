@@ -12,6 +12,9 @@
 Common conditions:
 
 - `AUTH_REQUIRED`: log in or refresh the current account session.
+- `UNSUPPORTED_HOST` / `UNSUPPORTED_WORKER_SESSION`: verify independent child support and actual worker help, not version alone. Preserve a user-pinned test launcher. Do not silently change execution mode.
+- Worker condition timeout or observation failure: inspect actionCompleted/completion/error.stage, recover observe when necessary, and verify page effects before retry. A completed action is not replayed because observation failed.
+- `ACTION_BUSY` / `STEP_BUSY`: wait for the prior child/in-flight action and revoke its lease before starting another; keep the same business budgets.
 - `PROFILE_BUSY`: inspect active runs; wait for or cancel the owner. Do not delete lock files while the owner may still run.
 - Browser start/runtime failure: verify supported OS/architecture, runtime download/integrity, and `MULTIAGENTOR_BROWSER_EXECUTABLE` when explicitly configured.
 - Proxy failure: validate the configured browser proxy and Windows upstream proxy chain. The CLI does not silently fall back to direct access.

@@ -2,7 +2,7 @@
 name: multiagentor
 description: Dynamically discover, install, operate, and troubleshoot MultiAgentor Scenario CLI capabilities. Use for service accounts, scenarios, persistent browser identities, tasks, supervised browser runs, evidence, and workspace operations as the CLI and service API evolve.
 metadata:
-  version: "1.6.0"
+  version: "1.7.0"
 ---
 
 # MultiAgentor
@@ -13,14 +13,14 @@ Use the CLI as the local browser executor and the downloaded scenario package as
 
 Follow these stages in order:
 
-1. **Skill update gate:** run the platform `update-skill` script exactly once. When it reports `updated: true`, stop the workflow and ask the user to start a new Agent task so the replaced instructions load.
-2. **CLI update gate:** when no browser run is active, run the platform `update-cli` script once for the managed portable installation. It compares the installed CLI with npm `dist-tags.latest` and installs the npm package when absent or outdated. Preserve its returned `invocation` for the workflow.
+1. **Skill update gate:** run the platform `update-skill` script exactly once. When it reports `updated: true`, stop the workflow and ask the user to start a new Agent task so the replaced instructions load. For an explicitly requested local Skill test, or a project-managed locked Skill, preserve that revision and skip self-update; record the source/version instead.
+2. **CLI update gate:** when no browser run is active, run the platform `update-cli` script once for the managed portable installation. It compares the installed CLI with npm `dist-tags.latest` and installs the npm package when absent or outdated. Preserve its returned `invocation` for the workflow. A user-supplied launcher or `MULTIAGENTOR_CLI_PATH` takes precedence: inspect and pin that installation, without replacing it or switching to the managed launcher. Do not update a project-managed pinned runtime unless requested.
 3. **Environment check:** detect OS/architecture, Node runtime, NVM, CLI launcher, data directory, API base, and browser runtime override. Read [installation.md](references/installation.md). On Windows, prefer `scripts/check-environment.ps1`; on macOS, prefer `scripts/check-environment.sh`.
-4. **CLI version check:** compare the running CLI version with npm `dist-tags.latest` and the installed package identity. Pin one launcher/version for the current run. Do not update while a browser run is active.
+4. **CLI version check:** compare the running CLI version with npm `dist-tags.latest` and the installed package identity. Pin one launcher/version for the current run. Do not update while a browser run is active. Explicit local tests may use a user-authorized unpublished npm build; record that provenance and inspect capabilities rather than treating a matching version as proof.
 5. **Install or update when needed:** read Node requirements from the current npm package metadata. Use a compatible existing/NVM runtime, or let the update gate install a verified portable Node when Node is missing. Install `multiagentor-scenario-cli` from npm and verify the launcher/version/help.
 6. **Discover the live interface:** read [dynamic-discovery.md](references/dynamic-discovery.md), then query current help, local compiled validation code, returned JSON, and downloaded scenario files.
 7. **Guide the user through run choices:** read [guided-workflow.md](references/guided-workflow.md). For every task/run, explicitly ask which CLI environment/workspace to use when ambiguous; whether to reuse, create, import a browser identity bundle, or import Cookies; and every supported proxy, website login, task, parameter, and run-mode choice. For a newly created identity, derive the OS, system version, kernel brand, and browser major automatically from the current host and detected browser instead of asking the user.
-8. **Execute the scenario workflow:** authenticate, obtain a scenario, prepare the chosen persistent browser identity, create or reuse a task, and supervise its foreground JSONL session. Read [execution-workflow.md](references/execution-workflow.md) and [supervised-execution.md](references/supervised-execution.md).
+8. **Execute the scenario workflow:** authenticate, obtain a scenario, prepare the chosen persistent browser identity, create or reuse a task, and supervise it to terminal. For Codex, read [worker-execution.md](references/worker-execution.md) and use isolated business steps. Read [execution-workflow.md](references/execution-workflow.md) for resource lifecycle. Use [supervised-execution.md](references/supervised-execution.md) only for explicitly selected legacy JSONL execution.
 9. **Close and verify:** drive the run to an advertised terminal state, read actual evidence/result files, verify Profile release, and report exact versions, resolved choices, IDs, status, reason, and artifact paths.
 
 ## Always discover the live interface
@@ -42,7 +42,8 @@ After dynamic discovery, read only the references needed for the request:
 | Authenticate MultiAgentor or a website account | [authentication.md](references/authentication.md) |
 | Guide a user from setup through a scenario run | [guided-workflow.md](references/guided-workflow.md) |
 | Full execution sequence and resource lifecycle | [execution-workflow.md](references/execution-workflow.md) |
-| Drive a foreground `task run` through JSONL | [supervised-execution.md](references/supervised-execution.md) |
+| Codex isolated workers and action-after observation (default) | [worker-execution.md](references/worker-execution.md) |
+| Explicit legacy foreground JSONL execution | [supervised-execution.md](references/supervised-execution.md) |
 | Diagnose failures or migrate the workspace | [troubleshooting.md](references/troubleshooting.md) |
 
 ## Workflow for a new automation
@@ -58,11 +59,12 @@ After dynamic discovery, read only the references needed for the request:
 ## Execution rules
 
 - Infer which operations create configuration and which start execution from current help and observed events; do not rely on names alone.
-- Keep the `task run` process open. Send one complete JSON request per line to its stdin and wait for the matching response before the next dependent action.
-- After any action that may change the page, request a fresh snapshot before selecting another element. Use only refs from the newest snapshot.
-- An action response with `ok: true` proves only that the browser action ran. Decide success from the downloaded scenario's stated outcome and the observed page.
+- Keep the owner process open until terminal. Codex defaults to `task run <taskId> --worker-session`: the main Agent owns step leases, concise progress and final closure; each new child uses `spawn_agent` with `fork_turns="none"`. No complete page snapshot enters the main Agent's context.
+- Require both isolated-child host support and all worker CLI commands. If absent, stop with `UNSUPPORTED_HOST` or `UNSUPPORTED_WORKER_SESSION`; never silently switch to inherited history or legacy JSONL. An explicit legacy request remains supported.
+- In worker mode, consume the action response's latest observation instead of requesting another snapshot. A fresh observation replaces refs; unchanged observations require ref mapping. See the worker reference for baseline recovery.
+- Browser action completion and completion-condition satisfaction are separate from business success. Decide success from the scenario's stated outcome and the resulting page. Observe before retrying an uncertain or partly executed action.
 - Read [authentication.md](references/authentication.md) before login. Use the visible OAuth device flow for the MultiAgentor account; use a visible persistent MultiAgentBrowser for website credentials and verification. Resume browser work with a fresh snapshot.
-- End every started task with the terminal action and statuses advertised by the active protocol. If the owner process is unavailable, use the discovered cancellation and inspection operations until terminal.
+- End every started task with the terminal operation advertised by the active protocol. In worker mode only the main Agent issues `run finish`; a child never closes the Run. If the owner process is unavailable, use the discovered cancellation and inspection operations until terminal.
 - One Browser Profile can belong to only one active run. Different profiles may run in parallel.
 - Do not reveal login passwords, tokens, Cookie values, proxy credentials, fingerprints, authorization headers, or typed secrets in responses, generated logs, parameters, or commits. Treat browser bundles and screenshots as sensitive files.
 - Use logout, task deletion, browser deletion, `--purge-profile`, Cookie replacement, or workspace migration only when they are within the user's requested outcome. State the exact target before acting.
@@ -77,6 +79,7 @@ For completed task runs, report:
 - task, run, scenario/version, and browser IDs;
 - effective non-sensitive parameters;
 - terminal status, reason, start/end time, and action counts;
+- execution mode, business-step results, observation/worker metrics when available; measured Token scope must include child sessions before being called a total;
 - `result.json`, screenshot, and run directory paths;
 - any manual step, denied capability, cleanup uncertainty, or failed evidence collection.
 

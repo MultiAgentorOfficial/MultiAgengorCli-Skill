@@ -1,5 +1,7 @@
 # Supervised JSONL execution
 
+This reference is for explicitly selected legacy execution. Codex defaults to [worker-execution.md](worker-execution.md); do not fall back here when worker support is missing. A legacy run cannot prove isolated-worker acceptance.
+
 ## Session setup
 
 Start `multiagentor task run <taskId>` in a persistent interactive process. The first event has this shape:
@@ -31,17 +33,18 @@ On `ok: false`, follow the returned code and message. Retry only when the cause 
 | Action | Params | Notes |
 | --- | --- | --- |
 | `status` | `{}` | Current run and browser URL |
-| `navigate` | `{"url":"https://..."}` | HTTP(S) only |
-| `snapshot` | `{}` | URL, title, redacted body text, and up to 200 elements |
+| `goto` | `{"url":"https://..."}` | HTTP(S) only; older binaries used navigate, confirm installed contract |
+| `snapshot` | `{}` | Current 0.2.x: blocks, elements, scope, generation, truncated, stats; no top-level text |
 | `click` | `{"ref":"..."}` | Current snapshot ref only |
 | `type` | `{"ref":"...","text":"..."}` | Current ref; text up to 10,000 chars; logs redact text |
 | `select` | `{"ref":"...","value":"..."}` | Current select ref |
-| `scroll` | `{"deltaY":480}` | Integer from -10,000 to 10,000 |
+| `scroll` | `{"deltaY":480,"ref":"<current-container-ref>"}` | Ref optional; use a container/descendant ref for nested scroll, confirm bounds |
 | `wait` | `{"ms":1000}` | Integer from 0 to 60,000 |
 | `back` | `{}` | Browser back |
 | `reload` | `{}` | Reload current page |
-| `screenshot` | `{"name":"checkpoint"}` | Letters, digits, dot, underscore, dash |
 | `close` | `{"status":"succeeded|failed|stopped","reason":"..."}` | Finalize the run |
+
+Current 0.2.x captures evidence automatically with screenshot permission and has no explicit screenshot action. Inspect the pinned binary instead of sending removed actions from an older catalog.
 
 Only use actions consistent with the downloaded scenario. The V2 CLI exposes a common action set; availability does not grant business intent.
 

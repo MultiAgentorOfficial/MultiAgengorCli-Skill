@@ -2,7 +2,7 @@
 
 Use this interview for each request that will create, configure, or run a task. Perform read-only discovery first so questions contain real choices. Do not ask the user for information available from the CLI.
 
-Honor an answer already given in the current request, but still show the resolved choice in the final pre-run summary. Never start a run until the browser identity source has been explicitly chosen for this run.
+Honor current and persistent choices. An explicit task or one uniquely matching existing task supplies its browser and unspecified parameters. Show the resolved configuration; ask only about ambiguity, conflicts, or missing inputs. Resolve tasks before creating or importing an identity.
 
 ## 1. Silent preflight
 
@@ -32,9 +32,21 @@ Once selected, pin them for the entire workflow.
 
 If `auth status` does not report `authenticated: true`, explain that MultiAgentor OAuth authorization is required and use [authentication.md](authentication.md). Open the visible OAuth flow; do not ask for an email, password, token, or code in chat. After the local window completes, run `auth status` again before continuing.
 
+## 2a. Resolve existing tasks before resource choices
+
+This rule applies to all scenarios. Use live `task list` and `task inspect` in the pinned workspace/account. An explicit task ID takes precedence, subject to conflicts with other explicit inputs. Otherwise filter by canonical scenario ID, browser ID and explicit task clues; do not require equality for parameters the user did not supply.
+
+- One candidate: reuse its task ID, browser and unspecified parameters. Inspect its actual scenario version and instructions; never silently migrate versions or download a replacement when reusing a task.
+- Multiple candidates: show actual names, IDs, browser and non-sensitive goal summaries, then ask. Do not select the newest task or create a substitute.
+- No candidate: collect missing scenario/browser/parameters before creating. No automatic new identity.
+- Supplied configuration differs: explain old versus requested values and wait for explicit consent before updating or running. Refusal or silence means no update and no Run. For changed reference accounts, update the original task only after consent and regenerate a versioned persona; a source-fingerprint mismatch blocks use of the old persona.
+- Busy browser: report the current Run, do not replace resources or create a duplicate task.
+
+Task reuse never expands business authorization. Use stored scenario, browser and parameters; infer visible mode when mode is missing, and ask only if that conflicts with the request. Do not add a repeated confirmation to an explicit execution request for unchanged resolved configuration.
+
 ## 3. Confirm the scenario
 
-When the user did not provide an exact scenario ID/version:
+When no selected task or explicit scenario ID/version resolves the scenario:
 
 1. Ask for the automation goal or search terms if still unclear.
 2. Run `scenario search`; show a short list of actual scenario names, IDs, and relevant descriptions.
@@ -45,7 +57,7 @@ Do not offer scenario import: the current CLI has search/get/list but no scenari
 
 ## 4. Required browser identity question
 
-Ask this for every new task/run, after listing current browser identities:
+A selected existing task already supplies the browser identity. Ask the following only when no browser is resolved, or the user explicitly requests an identity change, after listing current identities:
 
 > 这次任务使用哪种浏览器身份？
 > 1. **复用已有身份** — 继续使用已有指纹、代理、Profile 和登录状态，不创建新环境。
@@ -137,18 +149,15 @@ For X/Twitter and other website accounts, the Agent never enters passwords, one-
 
 ## 6. Task choice and parameters
 
-List tasks bound to the selected scenario/browser. Ask:
+Apply section 2a first: reuse one match without another reuse/create question; ask only for multiple candidates or changed explicit configuration. Create only if no task matches or the user explicitly requests an independent task. Inherit unspecified parameters on reuse, including the stored reference accounts and browsing duration.
 
-1. **复用匹配任务** — 使用已有任务 ID 和原配置，适合重复执行同一场景；运行前展示当前参数。
-2. **新建任务** — 创建独立任务并重新选择名称和参数，适合不同账号、目标或配置。
-
-When creating, ask the user to choose the task name and every parameter required by the downloaded scenario manifest. For optional parameters, show each supported choice/default together with its meaning and effect; do not silently populate business values. Write non-secret parameters to a restricted temporary JSON file for `--params-file`; never put secrets in it.
+When creating, collect only required business inputs not already supplied. Use the scenario-defined defaults for unspecified optional parameters and a descriptive task name unless the user requests a name; show resolved defaults and their meaning. Honor hidden/deprecated parameter guidance and do not ask about internal controls. A scenario may require explicit business authorization; never infer it from defaults. Write non-secret parameters to a restricted temporary JSON file for `--params-file`; never put secrets in it.
 
 Inspect the final task and show its task ID, scenario ID/version, browser ID, and non-sensitive parameters.
 
-## 7. Required pre-run confirmation
+## 7. Resolved pre-run summary
 
-Before `task run`, present one compact summary and ask the user to confirm:
+Before `task run`, present one compact summary. Existing explicit authorization of this resolved configuration is sufficient; request confirmation only for a configuration change, unresolved choice or scenario-specific authorization requirement:
 
 - scenario name, ID, and version;
 - task name and ID;
@@ -160,12 +169,12 @@ Before `task run`, present one compact summary and ask the user to confirm:
 
 If login is uncertain, recommend visible mode. Do not start on an ambiguous “use whatever is available” assumption.
 
-The user must explicitly select one annotated mode for this run. Do not inherit the choice from an earlier run:
+Honor the requested mode. If missing, default to visible mode; do not ask again for an unchanged resolved task. When the user asks to choose a mode, offer:
 
 1. **可见模式（登录不确定时推荐）** — 显示 MultiAgentBrowser，用户可以观察流程并处理登录或验证。
 2. **Headless 模式** — 后台运行、不显示浏览器；只适合登录状态明确且场景无需人工介入。
 
-For the final action, show:
+Only when a confirmation is actually required, show:
 
 1. **确认并运行** — 使用上方汇总配置启动前台监督任务。
 2. **返回修改** — 不启动任务，回到用户指定的选择步骤。
@@ -197,8 +206,8 @@ Use live help as the authority. For the current CLI family, the guided choices m
 | Configure proxy later | `browser proxy`; user selects remove or full protocol/host/port configuration |
 | Website login/warm-up | `browser launch`; visible mode only, user performs credentials and verification |
 | Select scenario | `scenario search`, then `scenario get`; user selects returned scenario ID |
-| Reuse/create task | `task list`/`task inspect` or `task create`; user selects name and scenario parameters |
-| Run task | `task run`; user selects visible or headless and confirms the resolved summary |
+| Reuse/create task | `task list`/`task inspect`; one match reuses, ambiguity asks, no match collects missing inputs then creates |
+| Run task | `task run`; honor requested mode, default visible, show summary and reuse existing authorization |
 
 Do not offer fields absent from the live CLI. When a later CLI adds fields, discover them and add them to the user choices for that run.
 

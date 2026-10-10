@@ -90,12 +90,12 @@
     {
       "id": "guided-new-profile-and-proxy",
       "prompt": "给我新建一个养号环境并运行合适的脚本。",
-      "expected_output": "先完成环境、版本、auth status 和只读资源列表，再搜索场景。新建身份时只让用户填写必填的浏览器名称和可选的代理信息；用户跳过代理时不传入任何 proxy 参数。不询问 OS、系统版本、内核品牌或 Chrome 主版本；从当前主机和 MultiAgentBrowser/已安装 Chrome 自动检测并填入。如果检测失败或服务不接受，报告具体字段并停止创建，不编造值。不得在聊天中询问代理密码。随后询问可见浏览器登录、任务复用/新建、场景参数、可见/headless，并在汇总后获得运行确认。"
+      "expected_output": "先完成环境、版本、auth status 和只读资源列表，按明确的新建身份请求收集必要浏览器名称和可选代理，不自动创建替代任务或绕过忙状态。不询问可发现的OS/系统版本/内核/Chrome版本；自动检测，失败报告，不编造。不得在聊天索取代理密码。解析任务与场景，仅询问缺失业务输入，沿用可用默认值和既有授权；展示配置，有差异才等待同意。"
     },
     {
       "id": "guided-import-before-run",
       "prompt": "跑一个 X 自动化脚本。",
-      "expected_output": "即使用户只说运行脚本，也要先列出现有身份并询问复用已有、新建养号身份、导入完整身份包或向已有身份导入 Cookie。每个选项必须附带用途、适用情况和实际影响，不能只显示名称。对导入包询问路径和可选名称；对 Cookie 解释并询问 merge/replace。完成网站登录状态、任务选择、参数和带注释的可见/headless选择后展示最终配置，提供确认运行、返回修改、取消三个带说明选项，再启动前台运行。"
+      "expected_output": "先查已有任务；唯一匹配复用并继承身份与未指定参数，多候选展示真实名称/浏览器/目标摘要让用户选。无候选且未指定浏览器时才询问复用、新建或导入身份，不自行创建；各选项说明实际影响。导入须用户明确选择，敏感凭据不在聊天传递。模式默认可见，沿用明确授权；配置冲突先展示差异并等待明确同意，不重复要求确认不变的任务。"
     },
     {
       "id": "main-agent-observation",
@@ -126,6 +126,46 @@
       "id": "reading-dwell-only",
       "prompt": "Run a warmup using an old task with initialDelaySeconds and feedDelaySeconds.",
       "expected_output": "Ignore deprecated delay fields; only explicit reading dwell uses wait. No startup/feed/retry sleeps. Preserve bounded condition checks, safety, deadlines and no-progress limits."
+    },
+    {
+      "id": "reuse-unique-task",
+      "prompt": "再执行一次 X 风格养号，沿用原配置。CLI只返回一个匹配任务。",
+      "expected_output": "Inspect and reuse the same task/browser/unspecified parameters, show summary and run with existing authorization. New Run ID; no repeated identity/parameter/confirmation interview."
+    },
+    {
+      "id": "reuse-ambiguous-task",
+      "prompt": "执行 X 风格养号，有两个匹配任务。",
+      "expected_output": "Show actual task names, IDs, browsers and safe goal summaries; wait for choice, no newest-task heuristic or substitute creation."
+    },
+    {
+      "id": "reuse-no-match",
+      "prompt": "执行新场景，CLI查询没有匹配任务。",
+      "expected_output": "Collect only missing required inputs and unresolved browser choice, inherit declared optional defaults, create task; do not automatically create browser identity."
+    },
+    {
+      "id": "reuse-config-conflict",
+      "prompt": "已有任务对标A；这次要改成B，用户没有同意更新。",
+      "expected_output": "Explain old/new difference and wait for explicit consent; zero task writes and zero Run/interaction on silence/refusal."
+    },
+    {
+      "id": "reuse-busy-browser",
+      "prompt": "唯一匹配任务的浏览器已有活动Run。",
+      "expected_output": "Report busy and current Run; no replacement task/browser or concurrent execution."
+    },
+    {
+      "id": "missing-task-memory",
+      "prompt": "场景需要task.memory.revision，实际CLI不广告此能力。",
+      "expected_output": "Stop before scene execution with missing capability; no chat-memory fallback or direct workspace SQLite writes."
+    },
+    {
+      "id": "memory-pending-action",
+      "prompt": "关注操作成功但memory结果写入失败，下次复用同一任务。",
+      "expected_output": "Read persisted pending intent and reobserve current target before any new write; no blind replay, no unfollow, no observation-driven goal update."
+    },
+    {
+      "id": "memory-stale-input",
+      "prompt": "用户批准更换对标后中断，task参数B但memory指纹仍是A。",
+      "expected_output": "Reject old persona for interactions, regenerate only from current task parameters with evidence and incremented version; fail closed if insufficient."
     }
   ]
 }

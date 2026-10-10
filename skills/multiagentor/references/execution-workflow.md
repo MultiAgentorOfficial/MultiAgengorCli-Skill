@@ -15,7 +15,9 @@ Use the discovered read-only authentication status operation. Login only when re
 
 After login, re-read status and record the non-sensitive account identity and API base. Never expose the returned token.
 
-## 3. Discover and obtain a scenario
+## 3. Resolve a task, then discover or obtain a scenario
+
+First resolve tasks using [guided-workflow.md](guided-workflow.md) section 2a. For an existing selected task, read its already downloaded scenario manifest/instructions through discovered local paths; do not run scenario get or silently change its local version. Only when no task resolves the scenario:
 
 1. Search through the CLI using the user's goal.
 2. Present a small set of actual names and IDs when selection is ambiguous.
@@ -25,11 +27,13 @@ After login, re-read status and record the non-sensitive account identity and AP
 
 Do not assume a fixed scenario metadata schema. Do not execute metadata as code.
 
+Before identity preparation, resolve tasks using [guided-workflow.md](guided-workflow.md) section 2a. An unchanged reused task supplies its browser and parameters. Do not create, import or reconfigure identity resources just to repeat an existing task.
+
 ## 4. Prepare a browser identity
 
 1. List and inspect existing identities.
 2. Reuse one only when its OS/browser/proxy/purpose/login state fits the scenario.
-3. Otherwise create one using values supported by the live CLI/service response.
+3. If no identity is resolved, ask for the identity source; create only when explicitly selected, using live supported values.
 4. Configure the requested proxy before login or execution.
 5. If site login or verification is required, open the persistent visible browser and let the user complete it directly.
 6. Close the manual browser and verify the Profile is no longer active.
@@ -38,11 +42,13 @@ Cookie and browser bundle operations handle sensitive plaintext. Discover suppor
 
 ## 5. Create or reuse a task
 
-1. List tasks and inspect candidates before creating one.
+1. List/inspect first: explicit task ID wins; one matching task is reused, multiple candidates require selection, no match collects missing inputs before creation.
 2. Bind exact scenario and browser IDs from the same account/workspace.
 3. Materialize validated non-secret parameters in the input form accepted by the live CLI.
-4. Create or update only the requested resource.
+4. Explain configuration differences and obtain explicit consent before update or Run; never silently overwrite reference accounts. Inherit unspecified values.
 5. Inspect the resulting task and verify all effective fields before launch.
+
+For task-memory scenarios, read [task-memory.md](task-memory.md), verify capabilities, and read the selected task namespace. Persona mismatch or missing memory capability blocks interaction. Each Run pins the matching persona version; new observations cannot rewrite its goal.
 
 ## 6. Start the foreground run
 

@@ -249,3 +249,7 @@ skills/multiagentor/
 新模式要求宿主支持 `spawn_agent` 的 `fork_turns="none"`，CLI 帮助包含全部 worker 命令。缺失时明确停止，不静默降级。主 Agent 管理 Run、预算和进度，子 Agent 观察与操作页面并只回传摘要；最终关闭由主 Agent 执行。
 
 本地测试明确指定 Skill 副本及 CLI 启动器时，保留该版本，跳过会替换它们的自动更新。读取 [手动测试说明](tests/manual-worker.md)。当前无子命令本地 JSONL 入口尚未支持 worker 模式；场景工厂的旧本地成功证据不能证明新模式。
+
+## Task reuse and memory
+
+The default entry reuses a uniquely matching task before asking for identity creation or unchanged parameters. Supplied configuration conflicts require explicit consent. Task-memory scenarios use the CLI revision API described in [task-memory.md](skills/multiagentor/references/task-memory.md). Engineering progress is tracked in [local Issues](docs/issues/README.md).

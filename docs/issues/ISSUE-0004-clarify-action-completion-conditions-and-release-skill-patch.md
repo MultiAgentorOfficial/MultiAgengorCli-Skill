@@ -40,7 +40,7 @@ Added an entrypoint rule and five local request examples in supervised-execution
 
 ## Verification
 
-Skill 2.0.1 quick_validate passed with explicit UTF-8; current-CLI discovery regression passed (1 passed, legacy-only case skipped). Five JSON envelope examples are consistent with the maintained CLI action contract. Narrow source review found no blocking findings. Published source 750dbc4 and annotated v2.0.1 on origin/main. GitHub release ZIP independently downloaded and SHA-256 matched d2a7ce1c1c0d62547893f196c5e71fc556bf55d92ed99b16f7e6a5d02a4a7077. Installed updater with -Ref v2.0.1 reported currentVersion=2.0.0, latestVersion=2.0.1, updated=true, integrityOk=true and restartRequired=true. New chats load the installed instructions. CLI changes tracked separately in CLI ISSUE-0050.
+Skill 2.0.1 quick_validate passed with explicit UTF-8; current-CLI discovery regression passed (1 passed, legacy-only case skipped). All six session.act envelopes (including the existing type example) were machine-validated against CLI 0.4.1 describe. Narrow source review found no blocking findings. Published source 750dbc4 and annotated v2.0.1 on origin/main. GitHub release ZIP independently downloaded and SHA-256 matched d2a7ce1c1c0d62547893f196c5e71fc556bf55d92ed99b16f7e6a5d02a4a7077. Installed updater with -Ref v2.0.1 reported currentVersion=2.0.0, latestVersion=2.0.1, updated=true, integrityOk=true and restartRequired=true. All 25 installed Skill files are byte-identical to v2.0.1 Git blobs (the Windows source checkout differs only in CRLF). New chats load the installed instructions. CLI changes tracked separately in CLI ISSUE-0050.
 
 ## Activity log
 

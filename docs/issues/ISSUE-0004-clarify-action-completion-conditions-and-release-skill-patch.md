@@ -28,15 +28,15 @@ Publish Skill 2.0.1 from its maintenance source with explicit restrictions and v
 
 ## Out of scope
 
-Not defined.
+CLI source changes (tracked separately), external website writes and unrelated workflow changes.
 
 ## Decisions
 
-No decisions recorded.
+Preserve CLI 0.4.0+ compatibility; waitFor is limited to click/scroll while navigation uses default completion and returned-page verification.
 
 ## Implementation notes
 
-No implementation has started.
+Added an entrypoint rule and five local request examples in supervised-execution.md, and bumped metadata.version to 2.0.1. Modified the maintenance source, published it, then used the installed updater; no direct installed-file edits.
 
 ## Verification
 

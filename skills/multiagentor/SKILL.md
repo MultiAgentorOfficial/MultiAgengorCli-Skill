@@ -2,7 +2,7 @@
 name: multiagentor
 description: Dynamically discover, install, operate, and troubleshoot MultiAgentor Scenario CLI capabilities. Use for service accounts, scenarios, persistent browser identities, tasks, supervised browser runs, evidence, and workspace operations as the CLI and service API evolve.
 metadata:
-  version: "1.7.0"
+  version: "1.8.0"
 ---
 
 # MultiAgentor
@@ -20,7 +20,7 @@ Follow these stages in order:
 5. **Install or update when needed:** read Node requirements from the current npm package metadata. Use a compatible existing/NVM runtime, or let the update gate install a verified portable Node when Node is missing. Install `multiagentor-scenario-cli` from npm and verify the launcher/version/help.
 6. **Discover the live interface:** read [dynamic-discovery.md](references/dynamic-discovery.md), then query current help, local compiled validation code, returned JSON, and downloaded scenario files.
 7. **Guide the user through run choices:** read [guided-workflow.md](references/guided-workflow.md). For every task/run, explicitly ask which CLI environment/workspace to use when ambiguous; whether to reuse, create, import a browser identity bundle, or import Cookies; and every supported proxy, website login, task, parameter, and run-mode choice. For a newly created identity, derive the OS, system version, kernel brand, and browser major automatically from the current host and detected browser instead of asking the user.
-8. **Execute the scenario workflow:** authenticate, obtain a scenario, prepare the chosen persistent browser identity, create or reuse a task, and supervise it to terminal. For Codex, read [worker-execution.md](references/worker-execution.md) and use isolated business steps. Read [execution-workflow.md](references/execution-workflow.md) for resource lifecycle. Use [supervised-execution.md](references/supervised-execution.md) only for explicitly selected legacy JSONL execution.
+8. **Execute the scenario workflow:** authenticate, obtain a scenario, prepare the chosen persistent browser identity, create or reuse a task, and supervise it to terminal directly in the main Agent. Read [execution-workflow.md](references/execution-workflow.md) for resource lifecycle and [supervised-execution.md](references/supervised-execution.md) for the default foreground JSONL protocol.
 9. **Close and verify:** drive the run to an advertised terminal state, read actual evidence/result files, verify Profile release, and report exact versions, resolved choices, IDs, status, reason, and artifact paths.
 
 ## Always discover the live interface
@@ -42,8 +42,8 @@ After dynamic discovery, read only the references needed for the request:
 | Authenticate MultiAgentor or a website account | [authentication.md](references/authentication.md) |
 | Guide a user from setup through a scenario run | [guided-workflow.md](references/guided-workflow.md) |
 | Full execution sequence and resource lifecycle | [execution-workflow.md](references/execution-workflow.md) |
-| Codex isolated workers and action-after observation (default) | [worker-execution.md](references/worker-execution.md) |
-| Explicit legacy foreground JSONL execution | [supervised-execution.md](references/supervised-execution.md) |
+| Main Agent foreground JSONL execution (default) | [supervised-execution.md](references/supervised-execution.md) |
+| Historical worker compatibility | [worker-execution.md](references/worker-execution.md) |
 | Diagnose failures or migrate the workspace | [troubleshooting.md](references/troubleshooting.md) |
 
 ## Workflow for a new automation
@@ -59,15 +59,17 @@ After dynamic discovery, read only the references needed for the request:
 ## Execution rules
 
 - Infer which operations create configuration and which start execution from current help and observed events; do not rely on names alone.
-- Keep the owner process open until terminal. Codex defaults to `task run <taskId> --worker-session`: the main Agent owns step leases, concise progress and final closure; each new child uses `spawn_agent` with `fork_turns="none"`. No complete page snapshot enters the main Agent's context.
-- Require both isolated-child host support and all worker CLI commands. If absent, stop with `UNSUPPORTED_HOST` or `UNSUPPORTED_WORKER_SESSION`; never silently switch to inherited history or legacy JSONL. An explicit legacy request remains supported.
-- In worker mode, consume the action response's latest observation instead of requesting another snapshot. A fresh observation replaces refs; unchanged observations require ref mapping. See the worker reference for baseline recovery.
+- Keep the owner process open until terminal. Start `task run <taskId>` in a persistent interactive process. The main Agent reads observations, chooses browser actions, tracks progress and sends the terminal `close` request; do not spawn child Agents or use worker leases.
+- Require a host process with writable stdin and readable stdout. Inspect the pinned JSONL protocol; missing interactive process support must be reported, not worked around with detached execution.
+- After a page-changing action, obtain one fresh snapshot and verify the result. Consume action-returned observations if a future pinned interface provides them; do not duplicate observations. Never reuse stale refs.
 - Browser action completion and completion-condition satisfaction are separate from business success. Decide success from the scenario's stated outcome and the resulting page. Observe before retrying an uncertain or partly executed action.
 - Read [authentication.md](references/authentication.md) before login. Use the visible OAuth device flow for the MultiAgentor account; use a visible persistent MultiAgentBrowser for website credentials and verification. Resume browser work with a fresh snapshot.
-- End every started task with the terminal operation advertised by the active protocol. In worker mode only the main Agent issues `run finish`; a child never closes the Run. If the owner process is unavailable, use the discovered cancellation and inspection operations until terminal.
+- End every started task with the terminal operation advertised by the active protocol. For JSONL send `close` with status, reason and optional structured scenarioResult. If the owner process is unavailable, use discovered cancellation and inspection operations until terminal.
 - One Browser Profile can belong to only one active run. Different profiles may run in parallel.
 - Do not reveal login passwords, tokens, Cookie values, proxy credentials, fingerprints, authorization headers, or typed secrets in responses, generated logs, parameters, or commits. Treat browser bundles and screenshots as sensitive files.
 - Use logout, task deletion, browser deletion, `--purge-profile`, Cookie replacement, or workspace migration only when they are within the user's requested outcome. State the exact target before acting.
+
+Only use explicit `wait` actions for scenario-defined reading dwell. Do not insert startup, feed, retry, pointer, typing or scroll delays. Condition-based page/element readiness checks and bounded manual login handling remain required. Ignore deprecated delay parameters in old tasks and omit them from new task choices.
 
 ## Report
 
@@ -79,7 +81,7 @@ For completed task runs, report:
 - task, run, scenario/version, and browser IDs;
 - effective non-sensitive parameters;
 - terminal status, reason, start/end time, and action counts;
-- execution mode, business-step results, observation/worker metrics when available; measured Token scope must include child sessions before being called a total;
+- execution mode, business results, action counts and available timing/observation metrics; report unavailable Token measurements honestly;
 - `result.json`, screenshot, and run directory paths;
 - any manual step, denied capability, cleanup uncertainty, or failed evidence collection.
 

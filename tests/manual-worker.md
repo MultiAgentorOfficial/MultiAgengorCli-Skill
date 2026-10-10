@@ -1,3 +1,18 @@
+# Historical worker test record
+
+This document is retained for compatibility history. It is not the current Skill acceptance procedure.
+
+## Current acceptance
+
+1. Pin this project Skill and a CLI build with no artificial action delays.
+2. Start one task run JSONL process directly in the main Agent.
+3. Observe, navigate, scroll, visit a safe detail, dwell explicitly, return and verify current refs.
+4. Exercise uncertain response recovery and visible manual-login continuation without resetting deadlines.
+5. Close with a truthful status; inspect result/evidence and verify Profile release.
+6. Confirm no child Agent or step lease was used; only reading dwell caused explicit waits.
+
+## Previous procedure
+
 # Local Codex worker test
 
 Use a new Codex chat so the replaced global Skill is loaded. Explicitly request this local Skill revision and pin a CLI launcher whose help advertises all worker commands. Skip self-update for this test; an npm release with the same version may lack the feature.

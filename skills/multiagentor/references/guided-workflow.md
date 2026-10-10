@@ -173,7 +173,7 @@ For the final action, show:
 
 ## 8. Run and finish
 
-Start the foreground run only after confirmation or existing explicit authorization of the resolved configuration. Codex defaults to [worker-execution.md](worker-execution.md); [supervised-execution.md](supervised-execution.md) is for explicitly chosen legacy JSONL. Inspect result/evidence files, verify Profile release, and report the resolved choices and outcome. Missing worker support is an error, not an automatic legacy selection.
+Start the foreground run after confirmation or existing explicit authorization of the resolved configuration. Follow [supervised-execution.md](supervised-execution.md) directly in the main Agent. Inspect result/evidence, verify Profile release and report the outcome. Do not ask for child-Agent or worker support.
 
 ## Question style
 
@@ -223,3 +223,5 @@ For dynamic lists, annotate them too. Format scenario, browser, and task choices
 ```
 
 Examples of relevant annotations include scenario purpose/version, browser OS/Chrome/proxy/busy status, and task scenario/browser binding. Do not expose secret values.
+
+Deprecated delay fields in existing task parameters are ignored. Omit them when offering parameters or creating new tasks; preserve reading dwell choices.

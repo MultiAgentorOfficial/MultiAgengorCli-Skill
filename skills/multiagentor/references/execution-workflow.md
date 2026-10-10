@@ -46,17 +46,17 @@ Cookie and browser bundle operations handle sensitive plaintext. Discover suppor
 
 ## 6. Start the foreground run
 
-1. For Codex, validate isolated children and worker commands and start `task run <taskId> --worker-session` in a persistent process. Explicit legacy mode uses a persistent process with writable stdin.
+1. Start `task run <taskId>` in a persistent interactive process with writable stdin; the main Agent executes directly.
 2. Capture the initial event, run ID, status, scenario version, browser ID, and scenario instruction path.
 3. Read the run-specific scenario instructions again.
-4. Confirm the active mode and action schemas for this pinned binary. Main reads scenario instructions and configuration, but no page observations in worker mode.
-5. Follow [worker-execution.md](worker-execution.md) for independent child steps, or [supervised-execution.md](supervised-execution.md) for explicitly selected legacy JSONL, until terminal.
+4. Confirm the JSONL action schemas for this pinned binary. The main Agent reads the pinned scenario, parameters and current page snapshots.
+5. Follow [supervised-execution.md](supervised-execution.md) until terminal; no child Agent or step lease is used.
 
 Starting is not completing. Do not detach unless the user explicitly asks for start-only behavior and the CLI supports safe later supervision.
 
 ## 7. Close, inspect, and report
 
-1. In worker mode the main Agent ends the final step lease then calls `run finish` with a precise status/reason. In legacy mode send the protocol's terminal action.
+1. Send the JSONL terminal `close` action with precise status/reason and optional scenarioResult. Verify the run-finished event.
 2. Wait for the matching response and final event.
 3. Use separate read-only run inspection/log operations when needed.
 4. Read the actual result/evidence file and verify the Profile lock was released.

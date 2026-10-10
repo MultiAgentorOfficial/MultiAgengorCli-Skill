@@ -30,7 +30,7 @@
     {
       "id": "full-foreground-run",
       "prompt": "找到适合的官方场景，创建任务并执行到完成。",
-      "expected_output": "完成环境、认证、场景、身份与任务准备；Codex 默认检查 fork_turns=none 与全部 worker 命令后启动 --worker-session。主 Agent 创建/撤销步骤且只接收摘要，每个新子 Agent 首次取得完整观察，动作后消费返回观察；主 Agent最终 finish 并读取 result.json。缺少支持不静默降级。"
+      "expected_output": "Prepare the environment, identity and task; start task run without --worker-session in a persistent stdin/stdout process. The main Agent observes, acts and verifies directly, then closes with truthful status and reads result.json. No child Agents or step leases."
     },
     {
       "id": "manual-login-profile",
@@ -98,29 +98,34 @@
       "expected_output": "即使用户只说运行脚本，也要先列出现有身份并询问复用已有、新建养号身份、导入完整身份包或向已有身份导入 Cookie。每个选项必须附带用途、适用情况和实际影响，不能只显示名称。对导入包询问路径和可选名称；对 Cookie 解释并询问 merge/replace。完成网站登录状态、任务选择、参数和带注释的可见/headless选择后展示最终配置，提供确认运行、返回修改、取消三个带说明选项，再启动前台运行。"
     },
     {
-      "id": "worker-baseline-and-refmap",
-      "prompt": "按三个业务步骤执行场景，其中第二步连续观察同一个稳定页面。",
-      "expected_output": "三个子 Agent均 fork_turns=none，首次 observe 不带基线。完整观察仅在子会话内；unchanged 保留该子 Agent基线并映射 elements.ref 与 blocks.elementRefs，更新 observationId/generation。主 Agent只接收精简摘要。"
+      "id": "main-agent-observation",
+      "prompt": "Execute three business checks in one persistent main-Agent JSONL session.",
+      "expected_output": "The main Agent executes all three business checks in one JSONL session. Snapshot after page changes; never reuse invalidated refs. No child, lease or mandatory stabilization sleep."
     },
     {
-      "id": "worker-timeout-observation-failure",
-      "prompt": "点击已执行，但 url-change 超时，或响应说观察阶段失败。继续场景。",
-      "expected_output": "区分 actionCompleted、completion、error.stage；先核验返回观察，观察缺失时恢复 observe。不因超时或失去响应而自动重放点击。"
+      "id": "uncertain-action-recovery",
+      "prompt": "A click response was lost; safely continue the same scenario.",
+      "expected_output": "Recover a fresh snapshot after an uncertain click or lost response before retrying. Verify whether the effect already occurred; preserve the original retry budget."
     },
     {
-      "id": "worker-handoff-budget",
-      "prompt": "子步骤遇到登录，人工处理后继续，浏览截止时间已接近。",
-      "expected_output": "子 Agent返回 needs-user，主 Agent等待子终止并撤销租约后处理人工介入。恢复创建新子 Agent完整观察，沿用原截止时间、随机决定、计数和重试预算，只有主 Agent最终 finish。"
+      "id": "manual-login-budget",
+      "prompt": "Manual login is needed near the original browsing deadline.",
+      "expected_output": "The main Agent pauses for visible manual login within original deadlines, then obtains a fresh snapshot and continues in the same Run. Preserve random decisions and counters; close truthfully."
     },
     {
       "id": "explicit-local-test-launcher",
       "prompt": "使用这份本地 Skill 和指定测试 CLI，不要自动更新，然后手测新模式。",
-      "expected_output": "保留指定 Skill 与 launcher，检查安装身份和真实 worker 帮助，不因 npm latest 或同版本号切换到旧 CLI。缺少能力明确停止。"
+      "expected_output": "Keep the supplied local Skill and pinned test CLI without update gates. Inspect the actual JSONL capabilities and execute directly in the main Agent."
     },
     {
-      "id": "local-jsonl-is-not-worker",
-      "prompt": "用场景工厂的无子命令本地入口验证独立子 Agent运行通过。",
-      "expected_output": "明确当前本地入口只支持旧 JSONL，不能把旧证据称作 worker 验收；说明需支持本地 worker 入口或单独准备 Workspace worker 验收。"
+      "id": "local-main-agent-acceptance",
+      "prompt": "Validate main-Agent JSONL using the factory project-local Skill and fixed Profile.",
+      "expected_output": "Use the factory project-local locked Skill and fixed Profile to validate main-Agent JSONL execution; never claim historical child isolation."
+    },
+    {
+      "id": "reading-dwell-only",
+      "prompt": "Run a warmup using an old task with initialDelaySeconds and feedDelaySeconds.",
+      "expected_output": "Ignore deprecated delay fields; only explicit reading dwell uses wait. No startup/feed/retry sleeps. Preserve bounded condition checks, safety, deadlines and no-progress limits."
     }
   ]
 }

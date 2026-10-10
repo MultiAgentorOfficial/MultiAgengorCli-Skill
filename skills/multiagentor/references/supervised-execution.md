@@ -1,6 +1,6 @@
 # Supervised JSONL execution
 
-This reference is for explicitly selected legacy execution. Codex defaults to [worker-execution.md](worker-execution.md); do not fall back here when worker support is missing. A legacy run cannot prove isolated-worker acceptance.
+This is the default execution workflow. The main Agent owns one foreground JSONL session from startup through verified terminal closure. No child Agent or worker lease is required.
 
 ## Session setup
 
@@ -34,7 +34,7 @@ On `ok: false`, follow the returned code and message. Retry only when the cause 
 | --- | --- | --- |
 | `status` | `{}` | Current run and browser URL |
 | `goto` | `{"url":"https://..."}` | HTTP(S) only; older binaries used navigate, confirm installed contract |
-| `snapshot` | `{}` | Current 0.2.x: blocks, elements, scope, generation, truncated, stats; no top-level text |
+| `snapshot` | `{}` | Current CLI: blocks, elements, scope, generation, truncated, stats; no top-level text |
 | `click` | `{"ref":"..."}` | Current snapshot ref only |
 | `type` | `{"ref":"...","text":"..."}` | Current ref; text up to 10,000 chars; logs redact text |
 | `select` | `{"ref":"...","value":"..."}` | Current select ref |
@@ -44,7 +44,7 @@ On `ok: false`, follow the returned code and message. Retry only when the cause 
 | `reload` | `{}` | Reload current page |
 | `close` | `{"status":"succeeded|failed|stopped","reason":"..."}` | Finalize the run |
 
-Current 0.2.x captures evidence automatically with screenshot permission and has no explicit screenshot action. Inspect the pinned binary instead of sending removed actions from an older catalog.
+Current CLI captures evidence automatically with screenshot permission and has no explicit screenshot action. Inspect the pinned binary instead of sending removed actions from an older catalog.
 
 Only use actions consistent with the downloaded scenario. The V2 CLI exposes a common action set; availability does not grant business intent.
 
@@ -66,10 +66,16 @@ When authentication, CAPTCHA, or verification appears, keep the visible browser 
 
 ## Closing
 
-Use `succeeded` only after the scenario's success condition is observable. Use `failed` for a terminal error or unmet required outcome. Use `stopped` for user stop, a safe no-progress exit, or a deliberate partial run.
+Use `succeeded` only after the scenario's success condition is observable. Use `failed` for a terminal error or unmet required outcome. Use `stopped` for user stop or an explicitly permitted partial run. No-progress termination follows the scenario contract (warmup scenarios require failed/three-no-progress-rounds).
 
 ```json
 {"protocolVersion":"1.0","requestId":"final","action":"close","params":{"status":"succeeded","reason":"scenario-completed"}}
 ```
 
 Wait for the matching response and the final `run-finished` event. Then inspect `resultPath` or run the separate inspect command and read `result.json`.
+
+## Timing and recovery
+
+Only scenario-defined reading dwell uses `wait`. Do not add fixed startup, loop, retry or stabilization sleeps. Navigation and element readiness are bounded conditions, not mandatory delays: continue immediately when ready. After a scroll, observe the actual viewport; if rendering is pending, refresh observation within the original bounded retry/deadline budget instead of replaying the scroll. Never require networkidle. Preserve original total/browsing/manual deadlines, counters, selected candidates and pending random decisions across recovery. Before opening a detail, reserve enough remaining browsing time for dwell, return and verification; otherwise skip the optional visit.
+
+Ignore deprecated homeDelaySeconds, initialDelaySeconds, feedDelaySeconds, initialWaitSeconds and listScrollDelaySeconds from old tasks; never turn them into waits or show them as new choices.

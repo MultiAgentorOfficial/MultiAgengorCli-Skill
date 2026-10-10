@@ -33,7 +33,17 @@ Read action schemas from describe instead of a static table. Use session.act for
 {"protocolVersion":"1.0","requestId":"type-1","action":"act","params":{"action":"type","params":{"ref":"<current-ref>","text":"<non-secret-value>"}}}
 ```
 
-Envelope ok means the action request was processed; inspect data.actionCompleted, data.completion.status and data.error. VALUE_MISMATCH or a completion timeout is not business success. Type/select verification reports only status, never the actual value. For full observations use data.observation.snapshot; for unchanged observations map previous refs with refMap and use the new generation/cursor. Pass baseObservationId only from the previous returned observation to request deduplication. Do not repeat an action after a completion or observation failure. Completion conditions for click/scroll are bounded by the described waitFor timeout.
+Envelope ok means the action request was processed; inspect data.actionCompleted, data.completion.status and data.error. VALUE_MISMATCH or a completion timeout is not business success. Type/select verification reports only status, never the actual value. For full observations use data.observation.snapshot; for unchanged observations map previous refs with refMap and use the new generation/cursor. Pass baseObservationId only from the previous returned observation to request deduplication. Do not repeat an action after a completion or observation failure. Use `waitFor` only for `click`/`scroll`, with the described condition and bounded timeout. Omit it for every other action, including `goto`, `back` and `reload`; navigation uses default DOMContentLoaded completion. Verify the returned observation's URL and page content against the expected destination, even when completion is `met`.
+
+Valid local request envelopes (replace placeholders with the intended URL or current refs):
+
+```json
+{"protocolVersion":"1.0","requestId":"goto-1","action":"act","params":{"action":"goto","params":{"url":"https://example.com/"}}}
+{"protocolVersion":"1.0","requestId":"back-1","action":"act","params":{"action":"back","params":{}}}
+{"protocolVersion":"1.0","requestId":"reload-1","action":"act","params":{"action":"reload","params":{}}}
+{"protocolVersion":"1.0","requestId":"click-1","action":"act","params":{"action":"click","params":{"ref":"<current-ref>"},"waitFor":{"kind":"url-change","timeoutMs":10000}}}
+{"protocolVersion":"1.0","requestId":"scroll-1","action":"act","params":{"action":"scroll","params":{"ref":"<current-ref>","deltaY":480},"waitFor":{"kind":"scroll-change","timeoutMs":10000}}}
+```
 
  Snapshot returns scoped blocks/elements/generation, not a top-level text string. Require capabilities by their declared domain. Current refs/cursors belong to the current observation; a fresh snapshot invalidates earlier refs, while cached response reads do not.
 

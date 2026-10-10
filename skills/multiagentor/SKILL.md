@@ -2,7 +2,7 @@
 name: multiagentor
 description: Dynamically discover, install, operate, and troubleshoot MultiAgentor Scenario CLI capabilities. Use for service accounts, scenarios, persistent browser identities, tasks, supervised browser runs, evidence, and workspace operations as the CLI and service API evolve.
 metadata:
-  version: "2.0.0"
+  version: "2.0.1"
 ---
 
 # MultiAgentor
@@ -55,6 +55,7 @@ Read [task-memory.md](references/task-memory.md) when the scenario requires cros
 - Keep the owner process open until terminal. Start `task run <taskId> --transport local` in a persistent foreground process. The main Agent reads observations, chooses browser actions, tracks progress and sends the terminal `close` request; do not spawn child Agents or use worker leases.
 - Local requests use UTF-8 files and separate CLI processes; writable terminal stdin is unnecessary. Worker, stdio and zero-argument execution are removed in CLI 0.4.0. Missing local transport blocks startup; upgrade the pinned runtime explicitly when permitted.
 - Prefer described session.act for page-changing actions and type/select verification. Check data.actionCompleted, completion and error separately from envelope ok; consume its returned observation without another snapshot. An unchanged observation requires refMap mapping; a full observation supplies snapshot. Use session.snapshot for independent observation. Never reuse stale refs.
+- Use `waitFor` only with `session.act` actions `click` or `scroll`. Never pass it for `goto`, `back`, `reload`, `type`, `select` or `wait`. Navigation uses its default DOMContentLoaded completion; verify the returned URL and page content before continuing. See the valid request examples in [supervised-execution.md](references/supervised-execution.md).
 - Browser action completion and completion-condition satisfaction are separate from business success. Decide success from the scenario's stated outcome and the resulting page. Observe before retrying an uncertain or partly executed action.
 - Read [authentication.md](references/authentication.md) before login. Use the visible OAuth device flow for the MultiAgentor account; use a visible persistent MultiAgentBrowser for website credentials and verification. Resume browser work with a fresh snapshot.
 - End every started task with the terminal operation advertised by the active protocol. Send the described `close` request with status, reason and optional structured scenarioResult. If the owner process is unavailable, use discovered cancellation and inspection operations until terminal.

@@ -12,7 +12,9 @@ None.
 
 ## In progress
 
-None.
+| ID | Title |
+|---|---|
+| [ISSUE-0004](ISSUE-0004-clarify-action-completion-conditions-and-release-skill-patch.md) | Clarify action completion conditions and release Skill patch |
 
 ## Blocked
 

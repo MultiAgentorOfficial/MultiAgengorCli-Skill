@@ -24,14 +24,16 @@ bash scripts/update-cli.sh
 
 The updater reads `dist-tags.latest`, `engines.node`, and `dist.integrity` for `multiagentor-scenario-cli` from the npm registry. Requests bypass stale intermediary metadata caches so a newly published release is visible. It compares the live CLI version with the npm latest version and invokes the portable bootstrap when the CLI is missing, broken, or outdated. Parse its JSON and pin the returned `invocation` for the workflow. Use `-CheckOnly` or `--check-only` for a read-only check.
 
+The updater may return cliDiscovery; reuse it with check-environment -SkipCli/--skip-cli. Do not repeat registry/version/help probes. Explicit local/locked installations skip update gates.
+
 ## 3. Inspect the environment
 
 ```text
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/check-environment.ps1 -CheckRemote
-bash scripts/check-environment.sh --check-remote
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/check-environment.ps1 -CliPath <pinned-launcher>
+bash scripts/check-environment.sh --cli-path <pinned-launcher>
 ```
 
-Confirm OS and architecture, Node/npm/NVM availability, resolved CLI path, live version/help, npm latest version, Node engine, registry, workspace, API base, and browser runtime override.
+Confirm OS and architecture, Node/npm/NVM availability, resolved CLI path, describe contract (legacy version/help only), reused npm latest version, Node engine, registry, workspace, API base, and browser runtime override.
 
 ## 4. Resolve and pin the launcher
 
@@ -73,7 +75,7 @@ From a fresh process verify:
 1. the launcher resolves to the intended installation;
 2. Node satisfies npm `engines.node`;
 3. CLI version equals the intended npm release;
-4. `--help` succeeds and provides the live command surface;
+4. `describe` provides the versioned command contract (legacy help only when unsupported);
 5. the read-only workspace path operation succeeds;
 6. no active run exists before changing CLI, Node, workspace, or browser runtime.
 

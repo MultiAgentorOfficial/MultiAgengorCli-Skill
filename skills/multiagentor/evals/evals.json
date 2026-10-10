@@ -25,12 +25,12 @@
     {
       "id": "dynamic-help-and-api",
       "prompt": "服务端最近改过接口，帮我创建一个场景任务并运行。",
-      "expected_output": "先运行实际 CLI 的版本和完整帮助，必要时检查该安装对应的编译路由与官方仓库当前 HEAD。通过 CLI 的只读状态、列表和搜索操作学习实时 JSON，不猜原始 API。下载场景后读取返回的所有路径和动态 metadata，再依据当前结构构造任务。"
+      "expected_output": "One preflight pins the actual package. Reuse describe index; query relevant operation schemas, then read-only resources and the fixed scenario. No routine compiled code, Git HEAD inspection, guessed parameters or raw API."
     },
     {
       "id": "full-foreground-run",
       "prompt": "找到适合的官方场景，创建任务并执行到完成。",
-      "expected_output": "Prepare the environment, identity and task; start task run without --worker-session in a persistent stdin/stdout process. The main Agent observes, acts and verifies directly, then closes with truthful status and reads result.json. No child Agents or step leases."
+      "expected_output": "Resolve/reuse a task; start task run --transport local in the main Agent foreground process. Send request files, retrieve bounded cache responses, verify business outcomes and close. No Worker/child/PTY stdin."
     },
     {
       "id": "manual-login-profile",
@@ -99,13 +99,13 @@
     },
     {
       "id": "main-agent-observation",
-      "prompt": "Execute three business checks in one persistent main-Agent JSONL session.",
-      "expected_output": "The main Agent executes all three business checks in one JSONL session. Snapshot after page changes; never reuse invalidated refs. No child, lease or mandatory stabilization sleep."
+      "prompt": "Execute three business checks in one persistent main-Agent local session.",
+      "expected_output": "The main Agent executes all three business checks in one local session. Snapshot after page changes; never reuse invalidated refs. No child, lease or mandatory stabilization sleep."
     },
     {
       "id": "uncertain-action-recovery",
       "prompt": "A click response was lost; safely continue the same scenario.",
-      "expected_output": "Recover a fresh snapshot after an uncertain click or lost response before retrying. Verify whether the effect already occurred; preserve the original retry budget."
+      "expected_output": "Read cached response by requestId first. Identical payload never reexecutes. Unknown outcome requires fresh state verification before a new write; preserve original candidate/progress/budgets."
     },
     {
       "id": "manual-login-budget",
@@ -115,12 +115,12 @@
     {
       "id": "explicit-local-test-launcher",
       "prompt": "使用这份本地 Skill 和指定测试 CLI，不要自动更新，然后手测新模式。",
-      "expected_output": "Keep the supplied local Skill and pinned test CLI without update gates. Inspect the actual JSONL capabilities and execute directly in the main Agent."
+      "expected_output": "Preserve the supplied Skill and CLI; skip updates. One contract preflight, then local requests in the main Agent. No registry repeats or runtime replacement."
     },
     {
       "id": "local-main-agent-acceptance",
-      "prompt": "Validate main-Agent JSONL using the factory project-local Skill and fixed Profile.",
-      "expected_output": "Use the factory project-local locked Skill and fixed Profile to validate main-Agent JSONL execution; never claim historical child isolation."
+      "prompt": "Validate default main-Agent execution using the factory project-local Skill and fixed Profile.",
+      "expected_output": "Use the project-local locked Skill and fixed Profile with candidate npm CLI. Validate local transport without stdin; cache large observations and close truthfully. Worker is not required."
     },
     {
       "id": "reading-dwell-only",
@@ -166,6 +166,26 @@
       "id": "memory-stale-input",
       "prompt": "用户批准更换对标后中断，task参数B但memory指纹仍是A。",
       "expected_output": "Reject old persona for interactions, regenerate only from current task parameters with evidence and incremented version; fail closed if insufficient."
+    },
+    {
+      "id": "capability-domains",
+      "prompt": "Scene needs task.memory.revision and snapshot.link-target. Start it.",
+      "expected_output": "Check memory in workspace and snapshot in browser; only snapshot.link-target goes to --require-capabilities. Describe relevant operations before startup."
+    },
+    {
+      "id": "large-cache-read",
+      "prompt": "Snapshot receipt says stored true and 80000 bytes; read elements.",
+      "expected_output": "Use run response pointer/pagination or responseFile through file tools; do not snapshot again just to get text, do not PTY repair. Preserve generation."
+    },
+    {
+      "id": "legacy-unwritable-stdin",
+      "prompt": "Old CLI has no describe/local and this host cannot keep raw stdin writable. Run task.",
+      "expected_output": "Read-only help/status allowed; block execution before task run with missing reliable transport. No PTY reconstruction, Worker workaround or detached browser."
+    },
+    {
+      "id": "bounded-render-recovery",
+      "prompt": "After scrolling the page is still rendering.",
+      "expected_output": "At most two additional observations within two seconds and the stricter original scenario budget. No new scroll, sleeps, networkidle or candidate reset."
     }
   ]
 }

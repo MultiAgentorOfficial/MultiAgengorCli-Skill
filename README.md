@@ -18,12 +18,12 @@ Agent 会检查环境、引导登录、列出实际可用的场景和浏览器�
 | --- | --- |
 | 操作系统 | Windows x64 或 Apple Silicon macOS；当前便携安装脚本不支持 Linux 和 Intel Mac |
 | Agent 宿主 | 能加载本地 Skills、读取文件并执行本机命令；本文以 Codex 为例 |
-| 默认执行模式 | Main Agent directly owns a foreground JSONL process with writable stdin and readable stdout; no child Agents |
+| 默认执行模式 | Main Agent owns a foreground local Run; request files and bounded receipts; no writable terminal stdin or child Agents |
 | 网络 | 安装和更新需要访问 GitHub、npm registry、nodejs.org；登录和执行还需要访问 MultiAgentor 服务及场景目标网站 |
 | 账号 | 执行服务端场景需要完成 MultiAgentor OAuth 授权；目标网站要求登录时，由用户在可见浏览器中完成 |
 | Node.js | 可以预先安装，也可以由辅助脚本下载并校验便携 Node.js；版本要求以当前 npm 包的 `engines.node` 为准 |
 
-Default runs use `task run <taskId>` directly in the main Agent. Historical worker commands remain compatible but are not part of the Skill execution workflow.
+Default runs use `task run <taskId> --transport local` directly in the main Agent. Skill 2.0.0 requires CLI 0.4.0+ and describe/local; Worker and stdin execution have been removed.
 
 ## 安装 Skill
 
@@ -209,7 +209,7 @@ Skill 版本只记录在 [SKILL.md](skills/multiagentor/SKILL.md) 的 `metadata.
 
 ### 提示 `UNSUPPORTED_HOST` 或 `UNSUPPORTED_WORKER_SESSION`
 
-前者表示宿主缺少所需独立子 Agent 能力，后者表示当前 CLI 缺少 worker 命令。默认模式会停止；检查宿主能力和固定的 CLI 版本，或在适用时显式请求旧 JSONL 模式。详细说明见 [worker 执行要求](skills/multiagentor/references/worker-execution.md)。
+这些错误属于历史 Worker 兼容路径。默认由主 Agent 通过 local 通道监督，不依赖子 Agent 或 Worker。缺少可靠通道时在启动前停止；旧 stdio 仅用于已验证可持续读写原始管道的宿主。
 
 ### 登录或下载失败
 
@@ -221,13 +221,13 @@ MultiAgentor 账号授权与目标网站登录是两个流程，见 [认证说�
 - 在没有 Node.js 的机器上下载并校验便携 Node.js 运行时。
 - 从 npm registry 获取当前 CLI 包及 Node 版本要求并完成安装。
 - 检查 Skill、本地 CLI 和 npm 最新版本；发现新版时覆盖旧 Skill 或受管 CLI。
-- 动态读取 CLI 帮助、返回 JSON、场景定义和运行协议，适应接口变化。
+- 一次预检固定运行包，通过 describe 索引和按需操作契约发现能力；正常流程无需翻编译代码。
 - 完成登录、场景选择、浏览器身份准备、任务创建和前台执行。
 - 为 MultiAgentor 账号打开可见 OAuth 授权流程，并将网站账号登录限制在可见的持久化 MultiAgentBrowser 中。
 - 每次运行场景前进行引导式选择：复用身份、新建养号身份、导入身份包或导入 Cookie，再确认任务参数与运行模式。
 - 新建浏览器身份时只需填写名称和可选代理；系统与浏览器指纹由 Skill 自动检测。
-- Codex 默认通过 `--worker-session` 使用主 Agent 与不继承聊天历史的新子 Agent，按业务步骤监督至终态。
-- 每个动作等待执行与有界完成检查，返回最新页面观察；完全相同的观察返回引用映射，减少重复正文。
+- 主 Agent 默认使用 `task run --transport local`，通过请求文件操作并监督至终态，不需要可写终端 stdin。
+- 大响应原子落盘并返回小回执；缓存选择与分页不刷新页面引用，重复 requestId 不重复执行。
 - 保留显式选择的旧 JSONL 运行方式，并读取运行结果和证据。
 - 处理代理、Cookie、浏览器包、运行取消、故障诊断和工作区迁移。
 
@@ -244,11 +244,9 @@ skills/multiagentor/
 
 详细执行规则以 [SKILL.md](skills/multiagentor/SKILL.md) 为入口；安装、登录、引导流程和故障处理的参考文档位于 `references/`，辅助脚本位于 `scripts/`。
 
-## 新模式与本地手测
+## 默认通道与本地手测
 
-新模式要求宿主支持 `spawn_agent` 的 `fork_turns="none"`，CLI 帮助包含全部 worker 命令。缺失时明确停止，不静默降级。主 Agent 管理 Run、预算和进度，子 Agent 观察与操作页面并只回传摘要；最终关闭由主 Agent 执行。
-
-本地测试明确指定 Skill 副本及 CLI 启动器时，保留该版本，跳过会替换它们的自动更新。读取 [手动测试说明](tests/manual-worker.md)。当前无子命令本地 JSONL 入口尚未支持 worker 模式；场景工厂的旧本地成功证据不能证明新模式。
+local 保留前台 Run 所有权，主 Agent 用请求文件和小回执控制页面；原 stdio 和 Worker 仅保留兼容。显式测试启动器和项目锁定 Skill 跳过自动更新，不覆盖全局安装。受控验收见 [local 手测说明](tests/manual-local.md)；[Worker 历史说明](tests/manual-worker.md) 只验证兼容行为。
 
 ## Task reuse and memory
 

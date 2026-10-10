@@ -23,7 +23,7 @@ function Get-CliVersion([string]$Path) {
     try { $value = (& $Path --version 2>$null | Select-Object -First 1); $text = ([string]$value).Trim(); if ($text) { return $text } } catch { }
     return $null
 }
-function Emit([hashtable]$Values) { $Values | ConvertTo-Json -Compress -Depth 5 }
+function Emit([hashtable]$Values) { $Values | ConvertTo-Json -Compress -Depth 12 }
 
 $cacheKey = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
 $headers = @{ 'User-Agent' = 'multiagentor-skill-updater'; 'Cache-Control' = 'no-cache, no-store'; 'Pragma' = 'no-cache' }
@@ -32,15 +32,25 @@ $latest = [string]$document.'dist-tags'.latest
 if (-not $latest -or -not $document.versions.$latest) { throw "npm metadata has no latest release for $PackageName." }
 $engine = [string]$document.versions.$latest.engines.node
 $integrity = [string]$document.versions.$latest.dist.integrity
-$current = Get-CliVersion $launcher
+$discovery = $null
+$probeNode = Get-Command node -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty Source
+if (-not $probeNode -and (Test-Path -LiteralPath (Join-Path $InstallRoot 'runtime'))) {
+    $probeNode = Get-ChildItem -LiteralPath (Join-Path $InstallRoot 'runtime') -Directory | ForEach-Object { Join-Path $_.FullName 'node.exe' } | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } | Select-Object -First 1
+}
+if ($probeNode -and (Test-Path -LiteralPath $launcher -PathType Leaf)) {
+    $probeOutput = & $probeNode (Join-Path $PSScriptRoot 'discover-cli.mjs') $launcher
+    if ($LASTEXITCODE -ne 0) { throw 'Pinned CLI discovery failed; diagnose before updating.' }
+    $discovery = $probeOutput | ConvertFrom-Json
+}
+$current = if ($discovery) { $discovery.cliVersion } else { Get-CliVersion $launcher }
 $needsUpdate = -not $current -or ([version]$latest -gt [version]$current)
-if (-not $needsUpdate) {
+if (-not $needsUpdate -and -not $discovery) {
     & $launcher --help | Out-Null
     if ($LASTEXITCODE -ne 0) { $needsUpdate = $true }
 }
 
 if ($CheckOnly -or -not $needsUpdate) {
-    Emit @{ mode = if ($CheckOnly) { 'check-only' } else { 'current' }; updateAvailable = $needsUpdate; updated = $false; invocation = if (Test-Path -LiteralPath $launcher) { $launcher } else { $null }; cliVersion = $current; latestVersion = $latest; nodeEngine = $engine; packageName = $PackageName; registry = $Registry; integrity = $integrity }
+    Emit @{ mode = if ($CheckOnly) { 'check-only' } else { 'current' }; updateAvailable = $needsUpdate; updated = $false; invocation = if (Test-Path -LiteralPath $launcher) { $launcher } else { $null }; cliVersion = $current; cliDiscovery = $discovery; latestVersion = $latest; nodeEngine = $engine; packageName = $PackageName; registry = $Registry; integrity = $integrity }
     exit 0
 }
 

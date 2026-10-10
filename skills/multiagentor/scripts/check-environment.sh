@@ -5,6 +5,7 @@ cli_path=""
 package_name="multiagentor-scenario-cli"
 registry="https://registry.npmjs.org"
 check_remote=0
+skip_cli=0
 skill_root="$(cd "$(dirname "$0")/.." && pwd)"
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -12,6 +13,7 @@ while [[ $# -gt 0 ]]; do
     --package-name) package_name="$2"; shift 2 ;;
     --registry) registry="${2%/}"; shift 2 ;;
     --check-remote) check_remote=1; shift ;;
+    --skip-cli) skip_cli=1; shift ;;
     *) echo "unknown argument: $1" >&2; exit 2 ;;
   esac
 done
@@ -23,8 +25,12 @@ npm_path="$(command_path npm)"; npm_version=""; [[ -n "$npm_path" ]] && npm_vers
 nvm_path="$(command_path nvm)"
 [[ -z "$cli_path" && -n "${MULTIAGENTOR_CLI_PATH:-}" ]] && cli_path="$MULTIAGENTOR_CLI_PATH"
 [[ -z "$cli_path" ]] && cli_path="$(command_path multiagentor)"
-cli_version=""; cli_help=false
-if [[ -n "$cli_path" ]]; then cli_version="$($cli_path --version 2>/dev/null || true)"; $cli_path --help >/dev/null 2>&1 && cli_help=true; fi
+cli_version=""; cli_help=false; discovery=null
+if [[ -n "$cli_path" && $skip_cli -eq 0 ]]; then
+  [[ -n "$node_path" ]] || { echo 'Compatible Node required for CLI discovery' >&2; exit 1; }
+  discovery="$("$node_path" "$skill_root/scripts/discover-cli.mjs" "$cli_path")" || exit 1
+  cli_version="$(printf '%s' "$discovery" | "$node_path" -e 'let s="";process.stdin.setEncoding("utf8");process.stdin.on("data",c=>s+=c);process.stdin.on("end",()=>process.stdout.write(JSON.parse(s).cliVersion));')"
+fi
 system_version="$(sw_vers -productVersion 2>/dev/null || true)"
 chrome_path="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 chrome_version=""; chrome_major=""
@@ -48,5 +54,5 @@ if [[ $check_remote -eq 1 ]]; then
 fi
 skill_version="$(sed -nE "s/^  version:[[:space:]]*['\"]?([^'\"]+)['\"]?[[:space:]]*$/\1/p" "$skill_root/SKILL.md" | head -n 1)"
 cat <<JSON
-{"skillVersion":$(json_string "$skill_version"),"skillRoot":$(json_string "$skill_root"),"os":$(json_string "$(uname -s)"),"architecture":$(json_string "$(uname -m)"),"systemVersion":$(json_string "$system_version"),"chromePath":$(json_string "$chrome_path"),"chromeVersion":$(json_string "$chrome_version"),"chromeMajor":$(json_string "$chrome_major"),"managedBrowserVersion":$(json_string "$managed_browser_version"),"managedBrowserMajor":$(json_string "$managed_browser_major"),"nodePath":$(json_string "$node_path"),"nodeVersion":$(json_string "$node_version"),"npmPath":$(json_string "$npm_path"),"npmVersion":$(json_string "$npm_version"),"nvmPath":$(json_string "$nvm_path"),"cliPath":$(json_string "$cli_path"),"cliVersion":$(json_string "$cli_version"),"cliHelpAvailable":$cli_help,"packageName":$(json_string "$package_name"),"registry":$(json_string "$registry"),"latestVersion":$(json_string "$latest"),"nodeEngine":$(json_string "$engine"),"integrity":$(json_string "$integrity"),"dataDir":$(json_string "${MULTIAGENTOR_DATA_DIR:-}"),"apiUrl":$(json_string "${MULTIAGENTOR_API_URL:-}"),"browserExecutable":$(json_string "${MULTIAGENTOR_BROWSER_EXECUTABLE:-}")}
+{"skillVersion":$(json_string "$skill_version"),"skillRoot":$(json_string "$skill_root"),"os":$(json_string "$(uname -s)"),"architecture":$(json_string "$(uname -m)"),"systemVersion":$(json_string "$system_version"),"chromePath":$(json_string "$chrome_path"),"chromeVersion":$(json_string "$chrome_version"),"chromeMajor":$(json_string "$chrome_major"),"managedBrowserVersion":$(json_string "$managed_browser_version"),"managedBrowserMajor":$(json_string "$managed_browser_major"),"nodePath":$(json_string "$node_path"),"nodeVersion":$(json_string "$node_version"),"npmPath":$(json_string "$npm_path"),"npmVersion":$(json_string "$npm_version"),"nvmPath":$(json_string "$nvm_path"),"cliPath":$(json_string "$cli_path"),"cliVersion":$(json_string "$cli_version"),"cliHelpAvailable":$cli_help,"cliDiscovery":$discovery,"packageName":$(json_string "$package_name"),"registry":$(json_string "$registry"),"latestVersion":$(json_string "$latest"),"nodeEngine":$(json_string "$engine"),"integrity":$(json_string "$integrity"),"dataDir":$(json_string "${MULTIAGENTOR_DATA_DIR:-}"),"apiUrl":$(json_string "${MULTIAGENTOR_API_URL:-}"),"browserExecutable":$(json_string "${MULTIAGENTOR_BROWSER_EXECUTABLE:-}")}
 JSON

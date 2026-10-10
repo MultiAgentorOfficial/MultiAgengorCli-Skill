@@ -1,81 +1,54 @@
-# Supervised JSONL execution
+# Main-Agent supervised execution
 
-This is the default execution workflow. The main Agent owns one foreground JSONL session from startup through verified terminal closure. No child Agent or worker lease is required.
+Default to local transport, retaining one foreground owner process until terminal. No child Agent, Worker lease or writable terminal stdin is required. Discover task.run, run.request, run.response and the relevant session actions first.
 
-## Session setup
+## Start and pin
 
-Start `multiagentor task run <taskId>` in a persistent interactive process. The first event has this shape:
+Start `multiagentor task run <taskId> --transport local` in a persistent foreground process with readable output. Capture the small run-started event, Run ID and skillPath; read that fixed scenario before business actions. Use the same launcher, account, workspace and API base for every command. Missing local transport blocks startup; the removed stdio/Worker protocols cannot be used as fallback.
 
-```json
-{"protocolVersion":"1.0","event":"run-started","run":{"id":"...","status":"running"},"skillPath":".../SKILL.md"}
-```
+## Requests and bounded responses
 
-Capture the run ID. Read `skillPath` before sending business actions; it is the fixed scenario procedure for this run. If the process ends before a `run-finished` event, inspect the run separately and report the interruption.
-
-## Request and response
-
-Send exactly one compact JSON object followed by a newline:
+Write one UTF-8 JSON file using the existing request envelope:
 
 ```json
-{"protocolVersion":"1.0","requestId":"1","action":"snapshot","params":{}}
+{"protocolVersion":"1.0","requestId":"observe-1","action":"snapshot","params":{}}
 ```
 
-Each request ID must be non-empty and unique within the session. Wait for its response:
+Send `run request <runId> --request-file <absolute-json-path>`. Do not write JSON into PTY stdin. Request IDs are unique per intended action. An identical ID and normalized content returns the saved result or processing state without executing again; different content with the same ID is a conflict. Clean up request files after acknowledgement. Do not expose typed secrets or local channel credentials.
+
+Complete redacted responses are atomically saved in the Run directory. Above 12288 bytes the CLI returns a small receipt with responseFile, bytes and sha256. Read that file through file tools, or use the following cached reads; none visits the page or changes generation:
+
+```text
+run response <runId> --request-id observe-1 --pointer /data/elements --offset 0 --limit 20
+run response <runId> --request-id observe-1 --output-file <new-absolute-path>
+```
+
+JSON Pointer selects data; pagination requires an array (limit 1–200). File export excludes selection/pagination and never overwrites. For selectionTooLarge narrow the pointer/page; do not repeat snapshot just to access cached text. Verify the receipt hash when transporting/exporting files. Processing is not failure: retrieve the same request later. Unknown after a crash requires fresh observation and business-state reconciliation before any new state-changing request.
+
+## Observe, decide, verify
+
+Read action schemas from describe instead of a static table. Use session.act for a verified action plus its latest observation:
 
 ```json
-{"protocolVersion":"1.0","requestId":"1","ok":true,"data":{}}
+{"protocolVersion":"1.0","requestId":"type-1","action":"act","params":{"action":"type","params":{"ref":"<current-ref>","text":"<non-secret-value>"}}}
 ```
 
-On `ok: false`, follow the returned code and message. Retry only when the cause is corrected and the business action is safe to repeat.
+Envelope ok means the action request was processed; inspect data.actionCompleted, data.completion.status and data.error. VALUE_MISMATCH or a completion timeout is not business success. Type/select verification reports only status, never the actual value. For full observations use data.observation.snapshot; for unchanged observations map previous refs with refMap and use the new generation/cursor. Pass baseObservationId only from the previous returned observation to request deduplication. Do not repeat an action after a completion or observation failure. Completion conditions for click/scroll are bounded by the described waitFor timeout.
 
-## Actions
+ Snapshot returns scoped blocks/elements/generation, not a top-level text string. Require capabilities by their declared domain. Current refs/cursors belong to the current observation; a fresh snapshot invalidates earlier refs, while cached response reads do not.
 
-| Action | Params | Notes |
-| --- | --- | --- |
-| `status` | `{}` | Current run and browser URL |
-| `goto` | `{"url":"https://..."}` | HTTP(S) only; older binaries used navigate, confirm installed contract |
-| `snapshot` | `{}` | Current CLI: blocks, elements, scope, generation, truncated, stats; no top-level text |
-| `click` | `{"ref":"..."}` | Current snapshot ref only |
-| `type` | `{"ref":"...","text":"..."}` | Current ref; text up to 10,000 chars; logs redact text |
-| `select` | `{"ref":"...","value":"..."}` | Current select ref |
-| `scroll` | `{"deltaY":480,"ref":"<current-container-ref>"}` | Ref optional; use a container/descendant ref for nested scroll, confirm bounds |
-| `wait` | `{"ms":1000}` | Integer from 0 to 60,000 |
-| `back` | `{}` | Browser back |
-| `reload` | `{}` | Reload current page |
-| `close` | `{"status":"succeeded|failed|stopped","reason":"..."}` | Finalize the run |
+After page-changing actions, consume the action-returned observation or obtain one fresh snapshot if none was returned, then verify the scenario result. On stale refs/cursors, observe again. If rendering is visibly incomplete, allow at most two additional observations within two seconds, always within the scenario's stricter remaining budget; no networkidle or fixed stabilization wait. Preserve original deadlines, counters, candidates, progress and pending random decisions across all recovery.
 
-Current CLI captures evidence automatically with screenshot permission and has no explicit screenshot action. Inspect the pinned binary instead of sending removed actions from an older catalog.
+Before a toggle or uncertain write, verify the current target and state. Already-desired state needs no action. Lost responses first use the durable cache; an uncertain effect requires fresh business-state verification before deciding to act again. A successful CLI action alone does not establish business success. Only scenario-defined reading dwell uses wait; ignore deprecated initial/feed/scroll delays.
 
-Only use actions consistent with the downloaded scenario. The V2 CLI exposes a common action set; availability does not grant business intent.
+## Manual intervention and close
 
-## Observe, decide, act
+Keep the visible browser open for user login/verification. Never request or type passwords, verification codes or CAPTCHA. Resume with a fresh observation within original budgets.
 
-1. Take a snapshot.
-2. Compare the page with the scenario's next condition.
-3. Choose one declared action using current observable evidence.
-4. After any page-changing action, take another snapshot.
-5. Check stop and success conditions before the next action.
+Send session.close with the truthful status, reason and optional scenarioResult through run request. The CLI stores close acceptance before cleanup and the final response before channel removal. Retrieve the close response, wait for run-finished, inspect terminal status/result.json and Profile release. Owner interruption requires separate run inspection/cancellation and an honest cleanup report; do not claim success from browser closure.
 
-Do not reuse element refs after `navigate`, `click`, `type`, `select`, `scroll`, `back`, or `reload`. Dynamic pages may also change between requests; if the target identity is not unambiguous, take another snapshot or stop instead of guessing.
+If the required business condition cannot be verified while active (for example a field value absent from snapshots), use the scenario's permitted partial/failure status when closing for evidence. Evaluate final screenshots afterward and report that later evidence separately. Never rewrite the terminal status or original scenarioResult to turn a post-close finding into an earlier success.
 
-An action returning `ok: true` does not show that the intended business result occurred. Verify the resulting page.
+## Unpublished factory scenarios
 
-## Manual intervention
-
-When authentication, CAPTCHA, or verification appears, keep the visible browser open and ask the user to complete it there. Do not request credentials in chat, type them, read Cookies, or bypass verification. After the user finishes, take a new snapshot.
-
-## Closing
-
-Use `succeeded` only after the scenario's success condition is observable. Use `failed` for a terminal error or unmet required outcome. Use `stopped` for user stop or an explicitly permitted partial run. No-progress termination follows the scenario contract (warmup scenarios require failed/three-no-progress-rounds).
-
-```json
-{"protocolVersion":"1.0","requestId":"final","action":"close","params":{"status":"succeeded","reason":"scenario-completed"}}
-```
-
-Wait for the matching response and the final `run-finished` event. Then inspect `resultPath` or run the separate inspect command and read `result.json`.
-
-## Timing and recovery
-
-Only scenario-defined reading dwell uses `wait`. Do not add fixed startup, loop, retry or stabilization sleeps. Navigation and element readiness are bounded conditions, not mandatory delays: continue immediately when ready. After a scroll, observe the actual viewport; if rendering is pending, refresh observation within the original bounded retry/deadline budget instead of replaying the scroll. Never require networkidle. Preserve original total/browsing/manual deadlines, counters, selected candidates and pending random decisions across recovery. Before opening a detail, reserve enough remaining browsing time for dwell, return and verification; otherwise skip the optional visit.
-
-Ignore deprecated homeDelaySeconds, initialDelaySeconds, feedDelaySeconds, initialWaitSeconds and listScrollDelaySeconds from old tasks; never turn them into waits or show them as new choices.
+Use only the factory-prepared explicit package and fixed Profile. Describe scenario.run and start its returned invocationArgs/environment; it uses the same run request/response/close protocol. This authoring Run is separate from authenticated Workspace tasks and cannot provide task memory. Memory-dependent scenarios require a Workspace Task. Do not treat local authoring as service publication.

@@ -25,17 +25,22 @@ latest="$(tr -d '\n' < "$work/latest.json" | sed -nE 's/.*"version":"([^"]+)".*/
 engine="$(tr -d '\n' < "$work/latest.json" | sed -nE 's/.*"engines":\{"node":"([^"]+)"\}.*/\1/p')"
 integrity="$(tr -d '\n' < "$work/latest.json" | sed -nE 's/.*"integrity":"([^"]+)".*/\1/p')"
 [[ -n "$latest" ]] || { echo "npm package has no latest release: $package_name" >&2; exit 1; }
-current=""
-[[ -x "$launcher" ]] && current="$($launcher --version 2>/dev/null | head -n 1 || true)"
+current=""; discovery=null
+probe_node="$(command -v node || true)"
+if [[ -z "$probe_node" ]]; then for candidate in "$install_root"/runtime/*/bin/node; do [[ -x "$candidate" ]] && { probe_node="$candidate"; break; }; done; fi
+if [[ -x "$launcher" && -n "$probe_node" ]]; then
+  discovery="$("$probe_node" "$(dirname "$0")/discover-cli.mjs" "$launcher")"
+  current="$(printf '%s' "$discovery" | "$probe_node" -e 'let s="";process.stdin.setEncoding("utf8");process.stdin.on("data",c=>s+=c);process.stdin.on("end",()=>process.stdout.write(JSON.parse(s).cliVersion));')"
+elif [[ -x "$launcher" ]]; then current="$("$launcher" --version 2>/dev/null | head -n 1 || true)"; fi
 needs_update=false
 [[ -n "$current" && "$current" == "$latest" ]] || needs_update=true
-if [[ "$needs_update" == false ]] && ! "$launcher" --help >/dev/null 2>&1; then needs_update=true; fi
+if [[ "$needs_update" == false && "$discovery" == null ]] && ! "$launcher" --help >/dev/null 2>&1; then needs_update=true; fi
 
 if [[ $check_only -eq 1 || "$needs_update" == false ]]; then
   mode="current"; [[ $check_only -eq 1 ]] && mode="check-only"
   invocation=""; [[ -x "$launcher" ]] && invocation="$launcher"
-  printf '{"mode":"%s","updateAvailable":%s,"updated":false,"invocation":"%s","cliVersion":"%s","latestVersion":"%s","nodeEngine":"%s","packageName":"%s","registry":"%s","integrity":"%s"}\n' \
-    "$mode" "$needs_update" "$(json_escape "$invocation")" "$(json_escape "$current")" "$latest" "$(json_escape "$engine")" "$package_name" "$(json_escape "$registry")" "$(json_escape "$integrity")"
+  printf '{"mode":"%s","updateAvailable":%s,"updated":false,"invocation":"%s","cliVersion":"%s","latestVersion":"%s","nodeEngine":"%s","packageName":"%s","registry":"%s","integrity":"%s","cliDiscovery":%s}\n' \
+    "$mode" "$needs_update" "$(json_escape "$invocation")" "$(json_escape "$current")" "$latest" "$(json_escape "$engine")" "$package_name" "$(json_escape "$registry")" "$(json_escape "$integrity")" "$discovery"
   exit 0
 fi
 

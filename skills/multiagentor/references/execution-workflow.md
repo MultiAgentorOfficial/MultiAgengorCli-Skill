@@ -52,17 +52,17 @@ For task-memory scenarios, read [task-memory.md](task-memory.md), verify capabil
 
 ## 6. Start the foreground run
 
-1. Start `task run <taskId>` in a persistent interactive process with writable stdin; the main Agent executes directly.
+1. Start `task run <taskId> --transport local` in a persistent foreground process; the main Agent executes directly.
 2. Capture the initial event, run ID, status, scenario version, browser ID, and scenario instruction path.
 3. Read the run-specific scenario instructions again.
-4. Confirm the JSONL action schemas for this pinned binary. The main Agent reads the pinned scenario, parameters and current page snapshots.
+4. Confirm the describe action schemas for this pinned binary. The main Agent reads the pinned scenario, parameters and current page snapshots.
 5. Follow [supervised-execution.md](supervised-execution.md) until terminal; no child Agent or step lease is used.
 
 Starting is not completing. Do not detach unless the user explicitly asks for start-only behavior and the CLI supports safe later supervision.
 
 ## 7. Close, inspect, and report
 
-1. Send the JSONL terminal `close` action with precise status/reason and optional scenarioResult. Verify the run-finished event.
+1. Send the local terminal `close` request through run request with precise status/reason and optional scenarioResult. Verify the run-finished event.
 2. Wait for the matching response and final event.
 3. Use separate read-only run inspection/log operations when needed.
 4. Read the actual result/evidence file and verify the Profile lock was released.

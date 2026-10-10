@@ -3,7 +3,8 @@ param(
     [string]$CliPath,
     [string]$PackageName = 'multiagentor-scenario-cli',
     [string]$Registry = 'https://registry.npmjs.org',
-    [switch]$CheckRemote
+    [switch]$CheckRemote,
+    [switch]$SkipCli
 )
 
 $ErrorActionPreference = 'Stop'
@@ -19,8 +20,13 @@ $nvmPath = Command-Path 'nvm'
 $resolvedCli = $CliPath
 if (-not $resolvedCli -and $env:MULTIAGENTOR_CLI_PATH) { $resolvedCli = $env:MULTIAGENTOR_CLI_PATH }
 if (-not $resolvedCli) { $resolvedCli = Command-Path 'multiagentor' }
-$cliVersion = if ($resolvedCli) { Capture { & $resolvedCli --version } } else { $null }
-$cliHelp = if ($resolvedCli) { [bool](Capture { & $resolvedCli --help }) } else { $false }
+$discovery = $null
+if ($resolvedCli -and -not $SkipCli) {
+    if (-not $nodePath) { throw 'A compatible Node runtime is required to inspect the pinned CLI.' }
+    $discoveryText = & $nodePath (Join-Path $PSScriptRoot 'discover-cli.mjs') $resolvedCli
+    if ($LASTEXITCODE -ne 0) { throw 'CLI discovery failed; do not start a Run.' }
+    $discovery = $discoveryText | ConvertFrom-Json
+}
 $systemVersion = [Environment]::OSVersion.Version.ToString()
 $chromePath = @(
     (Join-Path $env:ProgramFiles 'Google\Chrome\Application\chrome.exe'),
@@ -41,7 +47,7 @@ if ($CheckRemote) {
     if ($latest -and $document.versions.$latest) { $nodeEngine = [string]$document.versions.$latest.engines.node; $integrity = [string]$document.versions.$latest.dist.integrity }
 }
 
-$skillText = Get-Content -Raw -LiteralPath (Join-Path $skillRoot 'SKILL.md')
+$skillText = Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path $skillRoot 'SKILL.md')
 $match = [regex]::Match($skillText, '(?m)^\s{2}version:\s*["'']?([^"''\r\n]+)')
 [ordered]@{
     skillVersion = if ($match.Success) { $match.Groups[1].Value.Trim() } else { $null }
@@ -60,8 +66,9 @@ $match = [regex]::Match($skillText, '(?m)^\s{2}version:\s*["'']?([^"''\r\n]+)')
     npmVersion = $npmVersion
     nvmPath = $nvmPath
     cliPath = if ($resolvedCli) { [string]$resolvedCli } else { $null }
-    cliVersion = $cliVersion
-    cliHelpAvailable = $cliHelp
+    cliVersion = $discovery.cliVersion
+    cliHelpAvailable = $discovery.cliHelpAvailable
+    cliDiscovery = $discovery
     packageName = $PackageName
     registry = $Registry.TrimEnd('/')
     latestVersion = $latest
@@ -70,4 +77,4 @@ $match = [regex]::Match($skillText, '(?m)^\s{2}version:\s*["'']?([^"''\r\n]+)')
     dataDir = $env:MULTIAGENTOR_DATA_DIR
     apiUrl = $env:MULTIAGENTOR_API_URL
     browserExecutable = $env:MULTIAGENTOR_BROWSER_EXECUTABLE
-} | ConvertTo-Json -Depth 4
+} | ConvertTo-Json -Depth 12 -Compress

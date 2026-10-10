@@ -2,7 +2,7 @@
 
 ## Diagnose in this order
 
-1. Run the resolved launcher with `--version` and `--help`.
+1. Reuse the pinned describe contract; query the failing operation once if absent. Use version/help only for legacy compatibility or a diagnosed installation mismatch.
 2. Run `data path` and confirm the effective workspace.
 3. Run `auth status` for protected operations.
 4. Inspect the selected scenario, browser, task, and run using read-only commands.
@@ -12,9 +12,8 @@
 Common conditions:
 
 - `AUTH_REQUIRED`: log in or refresh the current account session.
-- Interactive process unavailable: default execution needs persistent writable stdin/readable stdout. Do not start a detached Run. Historical worker errors are irrelevant to the default path.
-- Worker condition timeout or observation failure: inspect actionCompleted/completion/error.stage, recover observe when necessary, and verify page effects before retry. A completed action is not replayed because observation failed.
-- Historical `ACTION_BUSY` / `STEP_BUSY`: these apply only to existing worker integrations; new Skill runs use direct JSONL without leases.
+- Interactive process unavailable: default local execution needs a retained foreground owner and separate request-file commands; removed stdin protocols are unavailable. Do not start a detached Run. Historical worker errors are irrelevant to the default path.
+- Action condition timeout or observation failure: inspect actionCompleted/completion/error.stage, take a fresh snapshot when necessary, and verify page effects before retry. A completed action is not replayed because observation failed.
 - `PROFILE_BUSY`: inspect active runs; wait for or cancel the owner. Do not delete lock files while the owner may still run.
 - Browser start/runtime failure: verify supported OS/architecture, runtime download/integrity, and `MULTIAGENTOR_BROWSER_EXECUTABLE` when explicitly configured.
 - Proxy failure: validate the configured browser proxy and Windows upstream proxy chain. The CLI does not silently fall back to direct access.

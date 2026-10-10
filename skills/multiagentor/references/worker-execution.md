@@ -1,5 +1,5 @@
-# Historical worker compatibility
+# Retired Worker execution
 
-Worker CLI commands remain available for existing integrations, but the MultiAgentor Skill no longer executes scenarios through child Agents or step leases. Use [supervised-execution.md](supervised-execution.md) for all new runs. Do not request spawn_agent or worker host capabilities. Historical worker evidence is not proof of main-Agent JSONL acceptance.
+CLI 0.4.0 and Skill 2.0.0 use only the supervised local channel. Worker commands and leases are removed. Read [supervised-execution.md](supervised-execution.md).
 
-Existing worker consumers must inspect their pinned CLI contract. The current implementation returns one immediate post-action observation without the old 300ms/1500ms stabilization loop. Explicit completion conditions remain bounded and distinct from business success.
+This redirect remains only because installed 1.x updater integrity checks expect this file during upgrade. It advertises no executable compatibility path.

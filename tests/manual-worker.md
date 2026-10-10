@@ -1,3 +1,5 @@
+> Historical Worker compatibility only. The default is main-Agent local transport; see manual-local.md.
+
 # Historical worker test record
 
 This document is retained for compatibility history. It is not the current Skill acceptance procedure.

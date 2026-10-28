@@ -51,6 +51,14 @@ After page-changing actions, consume the action-returned observation or obtain o
 
 Before a toggle or uncertain write, verify the current target and state. Already-desired state needs no action. Lost responses first use the durable cache; an uncertain effect requires fresh business-state verification before deciding to act again. A successful CLI action alone does not establish business success. Only scenario-defined reading dwell uses wait; ignore deprecated initial/feed/scroll delays.
 
+## Target positioning and local observation
+
+When independent positioning is required, discover `session.reveal` and `session.act` under the pinned contract and require browser capability `action.reveal` before starting. Send the usual local envelope with `action: "act"` and `params: {"action":"reveal","params":{"ref":"<current-ref>"}}`. Reveal only scrolls the current target and its scroll containers; it neither clicks nor navigates. It accepts no `waitFor`. A completed visible target yields `completion.status: "met"` and a new observation; the direct session.reveal interface returns `{ "visible": true }`.
+
+Consume the returned observation, using fresh refs/refMap, to recheck the same business target and interaction state before clicking. Visibility does not establish clickability or business permission. Hidden, detached, stale or unstable targets require fresh observation within the scenario's recovery budget; never fall back to coordinates or another driver. An element removed by a feed refresh cannot be recovered by reveal alone; use the scenario's stable-identity recovery procedure.
+
+Prefer action-returned observations and current block/cursor supplementation over repeated whole-page snapshots. Cached response pagination does not change refs; a new page observation does. Use ordinary click's automatic scroll when no independent pre-click observation is needed, and record positioning separately from feed advancement. Never bypass intent journaling, pending reconciliation or business-state verification to reduce calls.
+
 ## Manual intervention and close
 
 Keep the visible browser open for user login/verification. Never request or type passwords, verification codes or CAPTCHA. Resume with a fresh observation within original budgets.

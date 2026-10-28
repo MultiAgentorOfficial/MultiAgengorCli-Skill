@@ -2,7 +2,7 @@
 name: multiagentor
 description: Dynamically discover, install, operate, and troubleshoot MultiAgentor Scenario CLI capabilities. Use for service accounts, scenarios, persistent browser identities, tasks, supervised browser runs, evidence, and workspace operations as the CLI and service API evolve.
 metadata:
-  version: "2.0.1"
+  version: "2.0.2"
 ---
 
 # MultiAgentor
@@ -51,10 +51,12 @@ Read [task-memory.md](references/task-memory.md) when the scenario requires cros
 
 ## Execution rules
 
+- **MA-only browser execution:** every MA scenario uses only the pinned MA CLI for page observation, navigation, login assistance, interaction and recovery. Do not involve browser-use, computer-use, app-use, browser MCP tools, or an independent Playwright/CDP connection, including when MA fails or lacks a capability. Shell and file tools may invoke MA, read/parse its durable responses and save evidence; MA's internal browser implementation remains supported. Manual user login/verification remains manual. This is an Agent execution rule, not host-enforced tool isolation; report any breach and affected evidence as invalid.
 - Infer side effects and lifecycle from the pinned operation contract; do not rely on names alone.
 - Keep the owner process open until terminal. Start `task run <taskId> --transport local` in a persistent foreground process. The main Agent reads observations, chooses browser actions, tracks progress and sends the terminal `close` request; do not spawn child Agents or use worker leases.
 - Local requests use UTF-8 files and separate CLI processes; writable terminal stdin is unnecessary. Worker, stdio and zero-argument execution are removed in CLI 0.4.0. Missing local transport blocks startup; upgrade the pinned runtime explicitly when permitted.
 - Prefer described session.act for page-changing actions and type/select verification. Check data.actionCompleted, completion and error separately from envelope ok; consume its returned observation without another snapshot. An unchanged observation requires refMap mapping; a full observation supplies snapshot. Use session.snapshot for independent observation. Never reuse stale refs.
+- When a scenario requires independent scroll-into-view observation, discover `action.reveal`, `session.reveal` and the `session.act` reveal schema. Missing support blocks that scenario; never replace it with another driver. Use reveal only for pre-click observation/recovery, then rebind the target and state from the returned observation. Ordinary click already scrolls into view; do not add reveal to every click. See [supervised-execution.md](references/supervised-execution.md#target-positioning-and-local-observation).
 - Use `waitFor` only with `session.act` actions `click` or `scroll`. Never pass it for `goto`, `back`, `reload`, `type`, `select` or `wait`. Navigation uses its default DOMContentLoaded completion; verify the returned URL and page content before continuing. See the valid request examples in [supervised-execution.md](references/supervised-execution.md).
 - Browser action completion and completion-condition satisfaction are separate from business success. Decide success from the scenario's stated outcome and the resulting page. Observe before retrying an uncertain or partly executed action.
 - Read [authentication.md](references/authentication.md) before login. Use the visible OAuth device flow for the MultiAgentor account; use a visible persistent MultiAgentBrowser for website credentials and verification. Resume browser work with a fresh snapshot.

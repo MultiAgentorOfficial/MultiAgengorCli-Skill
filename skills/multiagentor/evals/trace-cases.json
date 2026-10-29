@@ -1,0 +1,240 @@
+{
+  "schemaVersion": 1,
+  "normalization": "Tool/decision events retain operation, lifted non-secret arguments/results and sourceRef to original tool evidence. Fixtures are controlled receipts, not observed Agent runs.",
+  "cases": [
+    {
+      "id": "reuse-unique",
+      "prompt": "运行已有且配置未变的唯一匹配任务。",
+      "receipts": [
+        {
+          "operation": "task.list",
+          "result": {
+            "tasks": [
+              {
+                "id": "task-1",
+                "browserId": "profile-1",
+                "scenarioId": "example"
+              }
+            ]
+          }
+        }
+      ],
+      "required": [
+        {
+          "operation": "task.inspect",
+          "taskId": "task-1"
+        },
+        {
+          "operation": "task.run",
+          "taskId": "task-1"
+        }
+      ],
+      "forbidden": [
+        {
+          "operation": "task.create"
+        },
+        {
+          "operation": "browser.create"
+        },
+        {
+          "operation": "user.confirm-unchanged"
+        }
+      ]
+    },
+    {
+      "id": "create-first",
+      "prompt": "没有现有任务；使用用户已选择的 profile-1 创建并运行 example。",
+      "receipts": [
+        {
+          "operation": "task.list",
+          "result": {
+            "tasks": []
+          }
+        }
+      ],
+      "required": [
+        {
+          "operation": "task.create",
+          "browserId": "profile-1",
+          "scenarioId": "example"
+        },
+        {
+          "operation": "task.inspect",
+          "taskId": "task-1"
+        },
+        {
+          "operation": "task.run",
+          "taskId": "task-1"
+        }
+      ],
+      "forbidden": [
+        {
+          "operation": "browser.create"
+        }
+      ]
+    },
+    {
+      "id": "manual-login",
+      "prompt": "当前可见 Run 出现登录页；用户随后确认已完成登录。",
+      "receipts": [
+        {
+          "operation": "run.request",
+          "action": "snapshot",
+          "result": {
+            "loginRequired": true
+          }
+        }
+      ],
+      "required": [
+        {
+          "operation": "human.wait"
+        },
+        {
+          "operation": "run.request",
+          "action": "snapshot",
+          "result": {
+            "loginRequired": false
+          }
+        }
+      ],
+      "forbidden": [
+        {
+          "operation": "credential.enter"
+        },
+        {
+          "operation": "browser.takeover"
+        }
+      ]
+    },
+    {
+      "id": "lost-reply",
+      "prompt": "click-1 已发出但终端响应丢失；缓存确认该动作已完成。",
+      "receipts": [
+        {
+          "operation": "run.request",
+          "requestId": "click-1",
+          "action": "click",
+          "result": {
+            "transport": "lost"
+          }
+        },
+        {
+          "operation": "run.response",
+          "requestId": "click-1",
+          "result": {
+            "actionCompleted": true
+          }
+        }
+      ],
+      "required": [
+        {
+          "operation": "run.request",
+          "requestId": "click-1",
+          "action": "click"
+        },
+        {
+          "operation": "run.response",
+          "requestId": "click-1",
+          "result": {
+            "actionCompleted": true
+          }
+        }
+      ],
+      "forbidden": [],
+      "counts": [
+        {
+          "match": {
+            "operation": "run.request",
+            "action": "click"
+          },
+          "max": 1
+        }
+      ]
+    },
+    {
+      "id": "unknown-effect",
+      "prompt": "点赞效果仍未知；固定场景要求停止新写、保留 pending 并失败收尾。",
+      "receipts": [
+        {
+          "operation": "run.response",
+          "requestId": "like-1",
+          "result": {
+            "effect": "unknown"
+          }
+        }
+      ],
+      "required": [
+        {
+          "operation": "run.response",
+          "requestId": "like-1",
+          "result": {
+            "effect": "unknown"
+          }
+        },
+        {
+          "operation": "memory.checkpoint",
+          "pending": true
+        },
+        {
+          "operation": "run.request",
+          "action": "close",
+          "status": "failed"
+        }
+      ],
+      "forbidden": [
+        {
+          "operation": "run.request",
+          "action": "click"
+        },
+        {
+          "operation": "memory.clear-pending"
+        }
+      ]
+    },
+    {
+      "id": "normal-close",
+      "prompt": "业务结果已核验，关闭并核验终态和 Profile 释放后报告。",
+      "receipts": [
+        {
+          "operation": "business.verify",
+          "verified": true
+        }
+      ],
+      "required": [
+        {
+          "operation": "business.verify",
+          "verified": true
+        },
+        {
+          "operation": "run.request",
+          "requestId": "close-1",
+          "action": "close",
+          "status": "succeeded"
+        },
+        {
+          "operation": "run.response",
+          "requestId": "close-1",
+          "result": {
+            "terminal": true
+          }
+        },
+        {
+          "operation": "run.inspect",
+          "result": {
+            "status": "succeeded",
+            "profileReleased": true
+          }
+        },
+        {
+          "operation": "report",
+          "status": "succeeded"
+        }
+      ],
+      "forbidden": [
+        {
+          "operation": "browser.takeover"
+        }
+      ]
+    }
+  ]
+}

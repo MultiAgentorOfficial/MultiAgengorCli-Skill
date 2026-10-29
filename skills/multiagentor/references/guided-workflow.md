@@ -4,29 +4,11 @@ Use this interview for each request that will create, configure, or run a task. 
 
 Honor current and persistent choices. An explicit task or one uniquely matching existing task supplies its browser and unspecified parameters. Show the resolved configuration; ask only about ambiguity, conflicts, or missing inputs. Resolve tasks before creating or importing an identity.
 
-## 1. Silent preflight
+## 1. Environment and resource discovery
 
-Before asking workflow questions:
+Complete [installation](installation.md) and [contract discovery](dynamic-discovery.md) once. Use supported read-only account/workspace, task, browser and Run operations to resolve actual candidates. Reuse that resource map while its binding stays current.
 
-1. Complete the Skill, CLI, environment, and live-interface gates.
-2. Run `auth status`, `data path`, `browser list`, `task list`, and `run list` through the pinned launcher when supported.
-3. Detect active runs and busy Profiles.
-4. If authenticated, run scenario search/list using the user's stated goal.
-
-Report a blocking installation or authentication problem immediately. Otherwise use the results to offer concrete names and IDs.
-
-When more than one usable CLI environment exists, ask the user which to use:
-
-1. **全局 npm 安装** — 使用系统 Node/npm 和 PATH 中的 CLI，适合已经统一配置开发环境的机器。
-2. **受管独立安装** — 使用 Skill 管理的独立 Node 和 CLI，不修改系统 PATH，适合隔离环境或没有 Node 的机器。
-3. **指定启动器路径** — 使用用户提供的 CLI 文件，适合已有自定义安装；后续全程固定该路径。
-
-Also show the effective data directory and API base. Ask whether to keep them or use user-supplied values before creating resources:
-
-1. **使用当前数据目录/API** — 继续使用现有登录、浏览器身份、任务和历史记录。
-2. **指定数据目录/API** — 使用另一套隔离数据或服务地址；该选择会改变可见的账号和资源。
-
-Once selected, pin them for the entire workflow.
+An explicit or project-locked installation wins. Ask about the installation or workspace/API only when multiple unresolved candidates or conflicting explicit settings remain; current resolved configuration needs no new confirmation. Pin the selected binding through completion.
 
 ## 2. MultiAgentor authentication gate
 
@@ -73,7 +55,7 @@ Ask the user to select an actual ID. Inspect it and show name, OS/browser finger
 
 ### Create a new identity
 
-Query live help and any read-only service metadata for supported values. Ask for only:
+Query the pinned operation descriptor and any applicable read-only metadata for supported values. Ask for only:
 
 - **浏览器名称（必填）** — 用于在身份列表中识别该 Profile。
 - **代理信息（可选）** — 用户可跳过；只有用户选择配置时，再询问协议、主机、端口和是否需要认证。
@@ -82,7 +64,7 @@ Resolve the environment fingerprint without asking the user:
 
 1. Set `--system-os` from the current host: `windows` on Windows or `macos` on macOS.
 2. Set `--system-version` from the host version returned by the environment check.
-3. Set `--kernel-brand chrome` unless live CLI help advertises a different required fixed value.
+3. Set `--kernel-brand chrome` unless the pinned descriptor advertises a different required fixed value.
 4. Set `--kernel-version` to the detected MultiAgentBrowser major when available; otherwise use the detected installed Google Chrome major.
 5. Confirm that each resolved value satisfies the live CLI and service contract before creating the identity. If detection fails or the service rejects a value, report the exact missing or rejected field and stop identity creation. Do not turn these fields into user choices and do not invent a fallback value.
 
@@ -149,7 +131,7 @@ For X/Twitter and other website accounts, the Agent never enters passwords, one-
 
 ## 6. Task choice and parameters
 
-Apply section 2a first: reuse one match without another reuse/create question; ask only for multiple candidates or changed explicit configuration. Create only if no task matches or the user explicitly requests an independent task. Inherit unspecified parameters on reuse, including the stored reference accounts and browsing duration.
+Apply the task-resolution decision in [section 2a](#2a-resolve-existing-tasks-before-resource-choices); this section collects inputs only for the resulting creation/update branch.
 
 When creating, collect only required business inputs not already supplied. Use the scenario-defined defaults for unspecified optional parameters and a descriptive task name unless the user requests a name; show resolved defaults and their meaning. Honor hidden/deprecated parameter guidance and do not ask about internal controls. A scenario may require explicit business authorization; never infer it from defaults. Write non-secret parameters to a restricted temporary JSON file for `--params-file`; never put secrets in it.
 
@@ -182,7 +164,7 @@ Only when a confirmation is actually required, show:
 
 ## 8. Run and finish
 
-Start the foreground run after confirmation or existing explicit authorization of the resolved configuration. Follow [supervised-execution.md](supervised-execution.md) directly in the main Agent. Inspect result/evidence, verify Profile release and report the outcome. Do not ask for child-Agent or worker support.
+After resolving configuration and its required authorization, follow [supervised execution](supervised-execution.md). That reference owns startup, receipts, recovery, closure and the final report.
 
 ## Question style
 
@@ -193,44 +175,8 @@ Start the foreground run after confirmation or existing explicit authorization o
 - Never ask the user to paste passwords, tokens, Cookie values, proxy credentials, verification codes, or recovery codes.
 - Re-run read-only lists when the user waits long enough that state may have changed.
 
-## Current CLI choice matrix
+## Discover operation fields
 
-Use live help as the authority. For the current CLI family, the guided choices map to these operations:
+Use the pinned operation descriptors for supported fields, defaults and validation; populate choices from actual read-only resources. This guide owns decision criteria, while describe owns command schemas.
 
-| User decision | Current operation and required choices |
-| --- | --- |
-| Reuse identity | `browser list`, user selects ID, then `browser inspect` |
-| Create identity | `browser create`; user enters a required name and may skip or provide proxy information; Skill auto-detects host OS, host version, kernel brand, and browser major |
-| Import identity | `browser import`; user selects bundle path and optional new name |
-| Import Cookies | `browser cookie-import`; user selects browser ID, Cookie file, and `merge` or `replace` |
-| Configure proxy later | `browser proxy`; user selects remove or full protocol/host/port configuration |
-| Website login/warm-up | `browser launch`; visible mode only, user performs credentials and verification |
-| Select scenario | `scenario search`, then `scenario get`; user selects returned scenario ID |
-| Reuse/create task | `task list`/`task inspect`; one match reuses, ambiguity asks, no match collects missing inputs then creates |
-| Run task | `task run`; honor requested mode, default visible, show summary and reuse existing authorization |
-
-Do not offer fields absent from the live CLI. When a later CLI adds fields, discover them and add them to the user choices for that run.
-
-For CLI `0.1.2`, `browser create` has this effective parameter contract:
-
-| Parameter | CLI behavior | Skill source |
-| --- | --- | --- |
-| `--name` | Required; no CLI default | User enters it |
-| `--system-os` | Required; no CLI default | Auto-detect current host as `windows` or `macos` |
-| `--system-version` | Required; no CLI default | Auto-detect current host version |
-| `--kernel-brand` | Optional; CLI defaults to `chrome` | Use live CLI default |
-| `--kernel-version` | Required; no CLI default | Auto-detect MultiAgentBrowser major, then installed Chrome major |
-| `--proxy-protocol`, `--proxy-host`, `--proxy-port` | Optional as a group; omitting every proxy option means no proxy | Ask only when the user chooses to configure a proxy |
-| `--proxy-username`, `--proxy-password` | Optional authentication fields | Use only when the live CLI provides a secure secret input path |
-
-Rebuild this table from live help and installed validation code when the CLI version changes.
-
-For dynamic lists, annotate them too. Format scenario, browser, and task choices as:
-
-```text
-1. <name> (<id>) — <what it is for>; <relevant status or effect>
-```
-
-Examples of relevant annotations include scenario purpose/version, browser OS/Chrome/proxy/busy status, and task scenario/browser binding. Do not expose secret values.
-
-Deprecated delay fields in existing task parameters are ignored. Omit them when offering parameters or creating new tasks; preserve reading dwell choices.
+Annotate dynamic choices as `<name> (<id>) — purpose; relevant status/effect`, including scenario version, browser busy/proxy state or task binding as applicable. Omit secret values and deprecated delay fields from new choices; preserve reading dwell parameters.

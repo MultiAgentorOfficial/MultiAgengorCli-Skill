@@ -12,7 +12,9 @@ None.
 
 ## In progress
 
-None.
+| ID | Title |
+|---|---|
+| [ISSUE-0006](ISSUE-0006-consolidate-ma-skill-routing-and-execution-references.md) | Consolidate MA Skill routing and execution references |
 
 ## Blocked
 

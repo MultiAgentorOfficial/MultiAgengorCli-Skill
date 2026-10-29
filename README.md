@@ -23,7 +23,7 @@ Agent 会检查环境、引导登录、列出实际可用的场景和浏览器�
 | 账号 | 执行服务端场景需要完成 MultiAgentor OAuth 授权；目标网站要求登录时，由用户在可见浏览器中完成 |
 | Node.js | 可以预先安装，也可以由辅助脚本下载并校验便携 Node.js；版本要求以当前 npm 包的 `engines.node` 为准 |
 
-Default runs use `task run <taskId> --transport local` directly in the main Agent. Skill 2.0.0 requires CLI 0.4.0+ and describe/local; Worker and stdin execution have been removed.
+Default runs use `task run <taskId> --transport local` directly in the main Agent. The current Skill requires CLI 0.4.0+ and describe/local; Worker and stdin execution have been removed.
 
 ## 安装 Skill
 
@@ -171,12 +171,6 @@ Skill 会从 npm 获取 CLI 的当前版本及 Node.js 要求，必要时安装�
 使用 $multiagentor，固定 CLI 启动器为 <CLI 的绝对路径>，保留这份 CLI 安装，不切换到受管版本。检查能力后引导我运行场景。
 ```
 
-**显式使用旧 JSONL 模式：**
-
-```text
-使用 $multiagentor，这次显式选择旧 JSONL 前台执行模式。检查兼容性并确认场景、浏览器身份和参数后，监督任务到终态。
-```
-
 ## 更新与常见问题
 
 ### Skill 和 CLI 如何更新？
@@ -209,7 +203,7 @@ Skill 版本只记录在 [SKILL.md](skills/multiagentor/SKILL.md) 的 `metadata.
 
 ### 提示 `UNSUPPORTED_HOST` 或 `UNSUPPORTED_WORKER_SESSION`
 
-这些错误属于历史 Worker 兼容路径。默认由主 Agent 通过 local 通道监督，不依赖子 Agent 或 Worker。缺少可靠通道时在启动前停止；旧 stdio 仅用于已验证可持续读写原始管道的宿主。
+这些错误属于历史 Worker 兼容路径。默认由主 Agent 通过 local 通道监督，不依赖子 Agent 或 Worker。缺少可靠通道时在启动前停止；当前 CLI 仅支持 local 通道；旧 stdio 和 Worker 不提供执行回退。
 
 ### 登录或下载失败
 
@@ -228,7 +222,6 @@ MultiAgentor 账号授权与目标网站登录是两个流程，见 [认证说�
 - 新建浏览器身份时只需填写名称和可选代理；系统与浏览器指纹由 Skill 自动检测。
 - 主 Agent 默认使用 `task run --transport local`，通过请求文件操作并监督至终态，不需要可写终端 stdin。
 - 大响应原子落盘并返回小回执；缓存选择与分页不刷新页面引用，重复 requestId 不重复执行。
-- 保留显式选择的旧 JSONL 运行方式，并读取运行结果和证据。
 - 处理代理、Cookie、浏览器包、运行取消、故障诊断和工作区迁移。
 
 ## 目录
@@ -246,7 +239,7 @@ skills/multiagentor/
 
 ## 默认通道与本地手测
 
-local 保留前台 Run 所有权，主 Agent 用请求文件和小回执控制页面；原 stdio 和 Worker 仅保留兼容。显式测试启动器和项目锁定 Skill 跳过自动更新，不覆盖全局安装。受控验收见 [local 手测说明](tests/manual-local.md)；[Worker 历史说明](tests/manual-worker.md) 只验证兼容行为。
+local 保留前台 Run 所有权，主 Agent 用请求文件和小回执控制页面；原 stdio 和 Worker 已移除。显式测试启动器和项目锁定 Skill 跳过自动更新，不覆盖全局安装。受控验收见 [local 手测说明](tests/manual-local.md)；[Worker 历史说明](tests/manual-worker.md) 仅保留历史说明。
 
 ## Task reuse and memory
 

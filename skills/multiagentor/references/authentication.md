@@ -5,7 +5,7 @@ Treat MultiAgentor service authentication and website authentication as separate
 ## MultiAgentor account
 
 1. Run the live `auth status` operation first. Continue only when login is required.
-2. Inspect live help and require `auth oauth`. The current npm CLI uses an OAuth device flow and never asks the Agent for an email, password, token, or device code.
+2. Discover the OAuth operation from the pinned describe contract. The current npm CLI uses an OAuth device flow and never asks the Agent for an email, password, token, or device code.
 3. Prefer the bundled launcher:
 
 ```text
@@ -18,7 +18,7 @@ bash scripts/start-auth-login.sh --cli-path <launcher>
 6. Keep the terminal open while the CLI polls. It must show success or failure and wait for Enter before closing.
 7. After the user finishes, run `auth status` again from the Agent process. Login succeeds only when the live response contains `authenticated: true`.
 
-If live help does not expose `auth oauth`, run the npm CLI update gate. If it remains unavailable, stop and report the installed version. Never fall back to an email/password command, token argument, environment variable, temporary credential file, clipboard, generated credential script, or shell history.
+If the pinned contract does not expose OAuth, run the npm CLI update gate. If it remains unavailable, stop and report the installed version. Never fall back to an email/password command, token argument, environment variable, temporary credential file, clipboard, generated credential script, or shell history.
 
 ### Windows behavior
 

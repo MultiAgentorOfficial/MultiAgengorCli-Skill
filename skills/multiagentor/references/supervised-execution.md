@@ -16,7 +16,7 @@ Write one UTF-8 JSON file using the existing request envelope:
 
 Send `run request <runId> --request-file <absolute-json-path>`. Do not write JSON into PTY stdin. Request IDs are unique per intended action. An identical ID and normalized content returns the saved result or processing state without executing again; different content with the same ID is a conflict. Clean up request files after acknowledgement. Do not expose typed secrets or local channel credentials.
 
-Complete redacted responses are atomically saved in the Run directory. Above 12288 bytes the CLI returns a small receipt with responseFile, bytes and sha256. Read that file through file tools, or use the following cached reads; none visits the page or changes generation:
+When response.agent-view is advertised, prefer run request/response --view agent under [efficient observation](efficient-observation.md); it presents already-persisted evidence and avoids routine full exports. Otherwise use the legacy JSON path below. Complete redacted responses are atomically saved in the Run directory. Above 12288 bytes the CLI returns a small receipt with responseFile, bytes and sha256. Read that file through file tools, or use the following cached reads; none visits the page or changes generation:
 
 ```text
 run response <runId> --request-id observe-1 --pointer /data/elements --offset 0 --limit 20
@@ -33,7 +33,7 @@ Read action schemas from describe instead of a static table. Use session.act for
 {"protocolVersion":"1.0","requestId":"type-1","action":"act","params":{"action":"type","params":{"ref":"<current-ref>","text":"<non-secret-value>"}}}
 ```
 
-Envelope ok means the action request was processed; inspect data.actionCompleted, data.completion.status and data.error. VALUE_MISMATCH or a completion timeout is not business success. Type/select verification reports only status, never the actual value. For full observations use data.observation.snapshot; for unchanged observations map previous refs with refMap and use the new generation/cursor. Pass baseObservationId only from the previous returned observation to request deduplication. Do not repeat an action after a completion or observation failure. Use `waitFor` only for `click`/`scroll`, with the described condition and bounded timeout. Omit it for every other action, including `goto`, `back` and `reload`; navigation uses default DOMContentLoaded completion. Verify the returned observation's URL and page content against the expected destination, even when completion is `met`.
+Envelope ok means the action request was processed; inspect data.actionCompleted, data.completion.status and data.error. VALUE_MISMATCH or a completion timeout is not business success. Type/select verification reports only status, never the actual value. For full observations use data.observation.snapshot; for unchanged observations map previous refs with refMap and use the new generation/cursor. Opt-in delta consumers use the CLI-materialized agent view or its exact saved observation; do not manually reconstruct or read a later page as the old response. Pass baseObservationId only from the previous returned observation to request deduplication. Do not repeat an action after a completion or observation failure. Use `waitFor` only for `click`/`scroll`, with the described condition and bounded timeout. Omit it for every other action, including `goto`, `back` and `reload`; navigation uses default DOMContentLoaded completion. Verify the returned observation's URL and page content against the expected destination, even when completion is `met`.
 
 Valid local request envelopes (replace placeholders with the intended URL or current refs):
 
@@ -70,3 +70,5 @@ If the required business condition cannot be verified while active (for example 
 ## Unpublished factory scenarios
 
 Use only the factory-prepared explicit package and fixed Profile. Describe scenario.run and start its returned invocationArgs/environment; it uses the same run request/response/close protocol. This authoring Run is separate from authenticated Workspace tasks and cannot provide task memory. Memory-dependent scenarios require a Workspace Task. Do not treat local authoring as service publication.
+
+For optional current navigation image evidence, read [visual verification](visual-verification.md). Existing start/end evidence files do not establish live visual verification.

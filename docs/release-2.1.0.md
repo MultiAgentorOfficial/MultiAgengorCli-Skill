@@ -9,3 +9,5 @@
 辅助脚本回归通过，两个未配置运行时的发现测试跳过。真实 X 的单帖超时仍未解决，完整30分钟验收与30% Token收益均未通过；发布不代表业务验收成功。用户自行更新本地安装，工厂通过官方来源锁定版本。
 
 发布候选 ZIP 含28个文件，与已提交 Git blobs 逐字节相同。SHA-256: `96d06c33ba03f42ebd97f17dd11cd4ce313ddd144ec3843e05c2ee4c1d97a8f1`。Skill schema 校验通过。
+
+正式发布：https://github.com/MultiAgentorOfficial/MultiAgengorCli-Skill/releases/tag/v2.1.0 。源码51b512f及发行归档提交20ae6fe已推送，标签v2.1.0指向20ae6fe。GitHub资产digest及独立下载SHA-256均与上述ZIP一致。CLI0.5.0另已发布到npm latest；用户自行更新，未把本次发布称为真实业务验收通过。

@@ -7,3 +7,5 @@
 发行ZIP由暂存Git blobs生成并逐文件核对，保留multiagentor/目录结构。发布不修改CLI版本、不覆盖全局Skill，不启动账号任务。GitHub回读及独立下载验证将在发布后追加。
 
 候选归档：`dist/multiagentor-skill-2.1.1.zip`，文件数30，SHA-256：`42e87dc9e8477f3ab501f39c8161de152c88c639dd5858480cd3f06e3b2e8dc7`。ZIP与暂存Skill blobs逐字节一致。
+
+正式发布：https://github.com/MultiAgentorOfficial/MultiAgengorCli-Skill/releases/tag/v2.1.1 。源码及发行标签提交`f843fac`已推送main；GitHub资产digest与独立下载SHA-256均为`42e87dc9e8477f3ab501f39c8161de152c88c639dd5858480cd3f06e3b2e8dc7`，30个ZIP文件与发行提交的Skill blobs一致。未替换本机全局安装；真实Agent验收仍未完成。

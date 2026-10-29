@@ -72,3 +72,5 @@ Evaluation-only owner evals/evaluate-trace.mjs exports evaluateTrace(caseDefinit
 ## 2026-10-29 — Publication authorization
 
 User explicitly requested commit, push and publication after the source rewrite report disclosed the missing real-X/fresh-Agent acceptance. Publish Skill2.1.1 source and its exact Git-blob ZIP through the existing GitHub distribution; no runtime/npm change or global installation. Schema validation passed; actual npm CLI0.4.3 test run:5 tests,4 passed,0 failed,1 skipped for the absent legacy fixture. Publication does not close the remaining authentic trace criterion.
+
+Skill2.1.1已按上述授权发布，标签/源码f843fac；GitHub资产与独立下载哈希一致，详见[发行记录](../release-2.1.1.md)。Issue仍待真实Agent轨迹，不以发布代替验收。

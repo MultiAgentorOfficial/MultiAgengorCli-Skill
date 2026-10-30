@@ -67,3 +67,7 @@ Corrected source Skill 2.1.2 persistence preparation, evidence reconciliation an
 ## 2026-10-30 — Publication authorization
 
 User explicitly requested commit, push and publication of Skill 2.1.2, plus an update/retest prompt for the other machine. This extends the earlier source-only scope to the ordinary source commit, main push, v2.1.2 tag, exact Git-blob ZIP and GitHub release. Keep historical account Runs, CLI/runtime, factory locks and local installed Skills unchanged. Real-Agent/30-minute acceptance remains outstanding and is not implied by publication.
+
+## 2026-10-30 — Publication verified
+
+Skill 2.1.2 已发布，源码及标签提交 939ae0aa78324ccc345c5c12a9aaed843c0d738c。GitHub 回读源码、资产 digest、独立下载哈希和 30 项 Git blob 对账均通过，详见 [发行记录](../release-2.1.2.md)。发布不替代真实 Agent/30 分钟验收；历史源修正阶段的未发布说明保持其时间语义。

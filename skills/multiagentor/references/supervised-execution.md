@@ -6,6 +6,14 @@ Default to local transport, retaining one foreground owner process until termina
 
 Start `multiagentor task run <taskId> --transport local` in a persistent foreground process with readable output. Capture the small run-started event, Run ID and skillPath. Reuse previously read scenario instructions only when their content digest matches this Run snapshot; otherwise read the fixed file before business actions. Use the same launcher, account, workspace and API base for every command. Missing local transport blocks startup; the removed stdio/Worker protocols cannot be used as fallback.
 
+## Prepare scenario persistence
+
+Before business actions, map the fixed scenario's required state to the actual persistence mechanism. If generating a local helper, inspect and dry-check its transitions using non-secret local fixtures without invoking the CLI or touching task memory. Cover selection, intent, verified or unknown effect, local failure/recovery, step settlement and finalization as applicable. A helper that initializes a retry counter but never increments/persists it does not cover recovery. The request helper only transports requests; it does not implement scenario checkpoints. Complete missing branches before interactions.
+
+Use the scenario's field names and limits. Preserve its original phase deadlines (anchored to their actual start events), stable targets, draws, progress sets, pending effects and shared recovery stages/counts. Persist an extra attempt and its unchanged deadline before performing it; navigation or a new observation must not reset the shared budget. Record concluded steps with the scenario-required outcome, reason, evidence, next step, elapsed time and used recovery budget, including round-level recovery. Retain the actual error and request ID; a local observation error is not a checkpoint write error. Only batch statistics that can be rebuilt from durable events.
+
+Where memory and local checkpoints mirror a cursor, publish the settled state after clearing that cursor; preserve pending until effect verification. Check write results and perform the scenario-required readback. A write failure prevents dependent new writes and follows the scenario's failure/reconciliation route. Do not silently switch to chat state or fabricate missing history.
+
 ## Requests and bounded responses
 
 Write one UTF-8 JSON file using the existing request envelope:
@@ -34,6 +42,12 @@ After page-changing actions, consume the action-returned observation or obtain o
 
 Before a toggle or uncertain write, verify the current target and state. Already-desired state needs no action. Lost responses first use the durable cache; an uncertain effect requires fresh business-state verification before deciding to act again. A successful CLI action alone does not establish business success. Only scenario-defined reading dwell uses wait; ignore deprecated initial/feed/scroll delays.
 
+## Reconcile a recording gap
+
+On discovering a missing record, pause dependent business writes and compare the checkpoint, step/action journals, same-request durable responses and memory revision. Distinguish an omitted transition, a failed write, a stale mirror and an intentionally inapplicable metric. Null summary fields alone do not establish missing source evidence. Reconcile known effects without replaying verified interactions; recover counters or stages only when retained events establish their exact meaning under the fixed scenario. Record any later reconciliation with its sources and current timestamp; never backdate it or present it as an immediate historical checkpoint.
+
+If critical state is provable, persistence is working and the scenario permits recovery, save the reconciled state and recheck the current target/safe page within the original remaining budgets before continuing. A recoverable local failure follows that scenario's skip/recovery route. If a required budget, identity, pending effect or gate remains unknown, do not guess zero, reset a deadline or resume dependent writes; follow the scenario's read-only or terminal route. Proven protocol violations retain their required failure outcome even when later evidence can explain them. Evaluate each Run separately; a shared reporting gap alone does not establish the same global failure in every Run.
+
 ## Target positioning and local observation
 
 When independent positioning is required, discover `session.reveal` and `session.act` under the pinned contract and require browser capability `action.reveal` before starting. Send the usual local envelope with `action: "act"` and `params: {"action":"reveal","params":{"ref":"<current-ref>"}}`. Reveal only scrolls the current target and its scroll containers; it neither clicks nor navigates. It accepts no `waitFor`. A completed visible target yields `completion.status: "met"` and a new observation; the direct session.reveal interface returns `{ "visible": true }`.
@@ -46,7 +60,9 @@ Use ordinary click's automatic scroll when independent pre-click observation is 
 
 For login/verification inside an active Run, retain its visible browser and foreground owner while the user acts under [authentication](authentication.md). Resume from a fresh observation within original budgets.
 
-Send session.close with the truthful status, reason and optional scenarioResult through run request. The CLI stores close acceptance before cleanup and the final response before channel removal. Retrieve the close response, wait for run-finished, inspect terminal status/result.json and Profile release. Owner interruption requires separate run inspection/cancellation and an honest cleanup report; do not claim success from browser closure.
+Before an early close, record the applicable fixed-scenario stop condition and supporting evidence, unresolved critical state or proven protocol violation, plus any permitted recovery attempted or ruled out. "Cannot yet report compliant completion" does not by itself establish "must terminate now". Follow mandatory global stops promptly; do not bypass them merely to reach a requested duration. Derive status/reason and scenarioResult from that decision for this Run; do not hard-code failed/interactionIncomplete across Runs because a summary is incomplete. Before normal completion verify the scenario's final page, pending effects and original duration/other completion conditions; closing a browser is not that check.
+
+Retain the non-secret close envelope (protocolVersion, requestId, action and actual params), together with the decision evidence, in the Run evidence before dispatch; redact sensitive values rather than retaining secret request files. Send session.close with the truthful status, reason and optional scenarioResult through run request. The CLI stores close acceptance before cleanup and the final response before channel removal. Retrieve the close response, wait for run-finished, inspect terminal status/result.json and Profile release. Owner interruption requires separate run inspection/cancellation and an honest cleanup report; do not claim success from browser closure.
 
 If the required business condition cannot be verified while active (for example a field value absent from snapshots), use the scenario's permitted partial/failure status when closing for evidence. Evaluate final screenshots afterward and report that later evidence separately. Never rewrite the terminal status or original scenarioResult to turn a post-close finding into an earlier success.
 

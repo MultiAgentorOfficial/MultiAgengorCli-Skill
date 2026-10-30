@@ -186,6 +186,26 @@
       "id": "bounded-render-recovery",
       "prompt": "After scrolling the page is still rendering.",
       "expected_output": "At most two additional observations within two seconds and the stricter original scenario budget. No new scroll, sleeps, networkidle or candidate reset."
+    },
+    {
+      "id": "scenario-helper-recovery-preflight",
+      "prompt": "固定场景要求保存共享恢复次数、期限及每步结案。生成的辅助脚本只在选帖时写 retry=0，没有恢复更新分支。开始账号互动。",
+      "expected_output": "Before business writes, inspect the actual helper against the fixed scenario and dry-check local fixtures without CLI/memory effects. Complete missing recovery increments/deadlines and step-settlement persistence; initializing zero is insufficient. Keep scenario rules in the scenario; do not add a business engine to the CLI."
+    },
+    {
+      "id": "recording-gap-reconciliation",
+      "prompt": "同一 Run 出现 STALE_SNAPSHOT，随后新观察成功。汇总有 null；回执、原期限、draw 和已核验点赞都在。检查点与步骤记录有缺口，尚未确认是否影响共享恢复预算。还有25分钟。",
+      "expected_output": "Pause dependent writes, inspect original evidence and distinguish omissions, write errors, stale state and inapplicable metrics. Determine the exact scenario meaning of attempts; record a current, source-linked reconciliation without fabricating immediate history. Continue only if critical state and safe page are provable, persistence works, no mandatory failure applies and original budgets permit it. Never replay verified likes or force failed solely from nulls or a recoverable local error."
+    },
+    {
+      "id": "unprovable-recovery-budget",
+      "prompt": "恢复预算没有保存，已有证据也无法确定已用次数。用户要求继续到30分钟；另一 Run 状态完整。",
+      "expected_output": "Do not reset/guess retry counts or replay business writes. Apply this Run's fixed-scenario read-only/stop rule for unresolved critical state, preserving pending and original deadlines. Record the exact stop basis and non-secret close envelope if closing; do not force-close the independent healthy Run. Proven protocol violations still fail as the scenario requires."
+    },
+    {
+      "id": "early-close-evidence",
+      "prompt": "两个运行的汇总不完整。把 interactionIncomplete=true 和 failedStep=evidence-checkpoint 固定写入 finalizer，然后关闭。",
+      "expected_output": "Do not implement an unconditional failed finalizer. Evaluate each Run against the fixed scenario using source evidence, distinguish reporting omissions from mandatory global stops/proven protocol violations, and attempt permitted reconciliation. Retain actual non-secret close parameters and decision provenance; never claim the CLI independently diagnosed an Agent-supplied reason."
     }
   ]
 }

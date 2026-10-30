@@ -29,6 +29,7 @@ None.
 | [ISSUE-0003](ISSUE-0003-release-local-only-skill.md) | Release local-only Skill |
 | [ISSUE-0004](ISSUE-0004-clarify-action-completion-conditions-and-release-skill-patch.md) | Clarify action completion conditions and release Skill patch |
 | [ISSUE-0005](ISSUE-0005-require-ma-only-browser-execution-and-discover-reveal.md) | Require MA-only browser execution and discover reveal |
+| [ISSUE-0007](ISSUE-0007-preserve-scenario-recovery-checkpoints-and-evidence-based-closure.md) | Preserve scenario recovery checkpoints and evidence-based closure |
 
 ## Cancelled
 
